@@ -1,8 +1,7 @@
 import { Resolver, Query, Context, Mutation, Args, ID } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { JobService } from './auth/job.service';
-
-import { JobType } from './job.type';
+import { Job } from './job.schema';
 import { CreateJobInput } from './create-job.input';
 import { GqlAuthGuard } from './auth/graphql-auth.guard';
 import { CurrentUser } from './app.resolver';
@@ -10,7 +9,7 @@ import { UserService } from './auth/user.service';
 import { NotificationService } from './auth/notification.service';
 import { ChatService } from './chat.service';
 
-@Resolver(() => JobType)
+@Resolver(() => Job)
 export class JobResolver {
     constructor(
         private readonly jobService: JobService,
@@ -20,7 +19,7 @@ export class JobResolver {
     ) { }
 
     // Mutation para que un cliente contacte a un proveedor
-    @Mutation(() => JobType)
+    @Mutation(() => Job)
     @UseGuards(GqlAuthGuard)
     async createServiceRequest(
         @Args('input') input: CreateJobInput,
@@ -86,14 +85,14 @@ export class JobResolver {
         return savedJob;
     }
 
-    @Query(() => [JobType], { name: 'getAllJobs' })
+    @Query(() => [Job], { name: 'getAllJobs' })
     @UseGuards(GqlAuthGuard)
     async findAll() {
         return this.jobService.findAll();
     }
 
     // Mutation para actualizar el estado del trabajo (Aceptar o Terminar)
-    @Mutation(() => JobType)
+    @Mutation(() => Job)
     @UseGuards(GqlAuthGuard)
     async updateJobStatus(
         @Args('jobId', { type: () => ID }) jobId: string,
@@ -119,7 +118,7 @@ export class JobResolver {
         return updatedJob;
     }
 
-    @Query(() => [JobType])
+    @Query(() => [Job])
     @UseGuards(GqlAuthGuard)
     myJobs(@Context() ctx) {
         const user = ctx.req.user;
@@ -127,13 +126,13 @@ export class JobResolver {
     }
 
     // En job.resolver.ts
-    @Query(() => [JobType])
+    @Query(() => [Job])
     @UseGuards(GqlAuthGuard)
     async getMyClientJobs(@CurrentUser() user: any) {
         return this.jobService.findJobsAsClient(user._id);
     }
 
-    @Query(() => [JobType])
+    @Query(() => [Job])
     @UseGuards(GqlAuthGuard)
     async getMyProviderJobs(@CurrentUser() user: any) {
         return this.jobService.findJobsAsProvider(user._id);
