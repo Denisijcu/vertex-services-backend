@@ -29,6 +29,8 @@ import { ChatModule } from './chat.module';
 import { PaymentModule } from './payment/payment.module';
 
 
+// ✅ AGREGAR ESTO
+const isProduction = process.env.NODE_ENV === 'production';
 
 
 @Module({
