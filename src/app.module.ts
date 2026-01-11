@@ -40,52 +40,35 @@ const isProduction = process.env.NODE_ENV === 'production';
       envFilePath: '.env',
     }),
 
-  GraphQLModule.forRoot<ApolloDriverConfig>({
-  driver: ApolloDriver,
-  autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-  sortSchema: true,
-  playground: process.env.NODE_ENV !== 'production',
-  introspection: process.env.NODE_ENV !== 'production',
-  context: ({ req, res }) => ({ req, res }),
-  
-  // ✅ CONFIGURACIÓN MÍNIMA - SIN VALIDACIONES
-  csrfPrevention: false,
-  
-  formatError: (error) => {
-    console.error('GraphQL Error:', error);
-    return {
-      message: error.message,
-      code: error.extensions?.code,
-    };
-  },
-}),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      // Cambia esto para que no use rutas absolutas que fallen en Render
+      autoSchemaFile: true, 
+      sortSchema: true,
+      playground: true, // Déjalo en true un momento para probar
+      introspection: true,
+      context: ({ req, res }) => ({ req, res }),
+      formatError: (error) => {
+        // Log simplificado para no chocar con instanceof
+        console.error('❌ GraphQL Error:', error.message);
+        return error;
+      },
+    }),
 
     MongooseModule.forRoot(
       process.env.MONGODB_URI || 'mongodb://localhost:27017/vertex-coders-db',
-      {
-        autoIndex: true,
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 45000,
-      }
     ),
 
-    // Solo dejamos los modelos que no tienen un módulo propio todavía
-    MongooseModule.forFeature([
-      { name: User.name, schema: UserSchema },
-      { name: Category.name, schema: CategorySchema },
-      { name: Job.name, schema: JobSchema },
-      { name: Notification.name, schema: NotificationSchema }  
-    ]),
+    // ⚠️ QUITA EL MongooseModule.forFeature DE AQUÍ
+    // Debe estar dentro de UserModule, JobModule, etc.
 
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'vertex-secret-key-2024-super-secure',
-      signOptions: {
-        expiresIn: '60m',
-        issuer: 'vertex-amazon-api',
-      },
+      signOptions: { expiresIn: '60m' },
       global: true,
     }),
 
+    // Solo los módulos, ellos se encargan de sus servicios
     AuthModule,
     AIBotModule,
     JobModule,
@@ -93,18 +76,12 @@ const isProduction = process.env.NODE_ENV === 'production';
     ChatModule,
     PulseModule,
     PaymentModule,
-   
   ],
-
   providers: [
     AppResolver,
     AdminResolver,
-    UserService,
-    CategoryResolver,
-    CategoryService,
-    UserResolver,
-    NotificationService,
-   
+    // ⚠️ QUITA UserService, CategoryService, etc. DE AQUÍ
+    // Si necesitas CategoryResolver, asegúrate de que CategoryModule lo exporte
   ],
 })
 export class AppModule {
