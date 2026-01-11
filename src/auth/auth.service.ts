@@ -88,26 +88,36 @@ async register(
   // ============================================
   // 2. LOGIN (SOPORTA AMBOS: bcrypt y post-quantum)
   // ============================================
-  async login(email: string, password: string, twoFactorCode?: string) {
+ async login(email: string, password: string, twoFactorCode?: string) {
+  try {
     const user = await this.userModel.findOne({ email: email.toLowerCase() });
     
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    // 🔐 VERIFICAR: Si tiene salt, usa post-quantum. Si no, usa bcrypt (compatibilidad)
+    // 🔐 VERIFICACIÓN DE CONTRASEÑA
     let isPasswordValid = false;
     
-    if (user.passwordSalt) {
-      // Usuario post-quantum
-      isPasswordValid = this.postQuantumCrypto.verifyPassword(
-        password,
-        user.password,
-        user.passwordSalt
-      );
-    } else {
-      // Usuario legacy (bcrypt)
-      isPasswordValid = await bcrypt.compare(password, user.password);
+    try {
+      if (user.passwordSalt) {
+        // Usuario post-quantum
+        console.log('🔐 Verifying post-quantum password...');
+        isPasswordValid = this.postQuantumCrypto.verifyPassword(
+          password,
+          user.password,
+          user.passwordSalt
+        );
+        console.log('✅ Post-quantum verify result:', isPasswordValid);
+      } else {
+        // Usuario legacy (bcrypt)
+        console.log('🔐 Verifying legacy bcrypt password...');
+        isPasswordValid = await bcrypt.compare(password, user.password);
+        console.log('✅ Bcrypt verify result:', isPasswordValid);
+      }
+    } catch (verifyError) {
+      console.error('❌ Password verification error:', verifyError);
+      throw new UnauthorizedException('Error verifying password');
     }
 
     if (!isPasswordValid) {
@@ -142,31 +152,39 @@ async register(
 
     // Actualizar último login
     user.lastLogin = new Date();
-    user.lastLoginQuantumSafe = user.passwordSalt ? true : false; // ✅ Marcar si es post-quantum
+    user.lastLoginQuantumSafe = user.passwordSalt ? true : false;
     await user.save();
 
     // Crear payload del token
     const payload = { 
       email: user.email, 
-      sub: user._id, 
+      sub: user._id.toString(), 
       name: user.name,
       role: user.role,
-      quantumSafe: user.passwordSalt ? true : false // ✅ Indicar en token si es post-quantum
+      quantumSafe: user.passwordSalt ? true : false
     };
     
+    const accessToken = this.jwtService.sign(payload);
+
+    console.log('✅ Login successful for:', email);
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: accessToken,
       user: {
-        _id: user._id,
+        _id: user._id.toString(),
         name: user.name,
         email: user.email,
         role: user.role,
-        avatar: user.avatar,
+        avatar: user.avatar || null,
         emailVerified: user.emailVerified
       }
     };
-  }
 
+  } catch (error) {
+    console.error('❌ Login error:', error.message);
+    throw error;
+  }
+}
   // ============================================
   // 3. VERIFICAR EMAIL (SIN CAMBIOS)
   // ============================================
