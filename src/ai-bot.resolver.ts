@@ -1,9 +1,8 @@
-import { Resolver, Mutation, Query, Args } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
+import { Args, Field, InputType, Mutation, ObjectType, Query, Resolver } from '@nestjs/graphql';
 import { AIBotService } from './auth/ai-bot.service';
 import { GqlAuthGuard } from './auth/graphql-auth.guard';
 import { CurrentUser } from './app.resolver';
-import { ObjectType, Field, InputType } from '@nestjs/graphql';
 
 // ============================================
 // TIPOS GRAPHQL
@@ -70,7 +69,7 @@ class ConversationMessageInput {
 
 @Resolver()
 export class AIBotResolver {
-  constructor(private readonly aiBotService: AIBotService ) {}
+  constructor(private readonly aiBotService: AIBotService) { }
 
   // ============================================
   // CHAT CON EL BOT

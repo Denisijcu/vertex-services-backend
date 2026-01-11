@@ -1,6 +1,6 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Field, InputType, Mutation, ObjectType, Query, Resolver } from '@nestjs/graphql';
-import { CurrentUser } from '../app.resolver_old';
+import { CurrentUser } from '../app.resolver';
 import { AuthService } from './auth.service';
 import { GqlAuthGuard } from './graphql-auth.guard';
 
@@ -259,27 +259,49 @@ export class AuthResolver {
   // ============================================
   // REGISTRO
   // ============================================
-  @Mutation(() => MessageResponse)
+   @Mutation(() => MessageResponse)
   async register(@Args('input') input: RegisterInput) {
-    return this.authService.register(
-      input.email,
-      input.password,
-      input.name,
-      input.role,
-      input.termsAccepted
-    );
+    try {
+      console.log('📝 Register input received:', input);
+      const result = await this.authService.register(
+        input.email,
+        input.password,
+        input.name,
+        input.role,
+        input.termsAccepted
+      );
+      return result;
+    } catch (error: any) {
+      console.error('❌ Register error:', error?.message);
+      return {
+        message: error?.message || 'Registration failed',
+        emailVerificationToken: null
+      };
+    }
   }
 
   // ============================================
   // LOGIN
   // ============================================
-  @Mutation(() => LoginResponse)
+   @Mutation(() => LoginResponse)
   async login(@Args('input') input: LoginInput) {
-    return this.authService.login(
-      input.email,
-      input.password,
-      input.twoFactorCode
-    );
+    try {
+      console.log('🔐 Login attempt:', input.email);
+      const result = await this.authService.login(
+        input.email,
+        input.password,
+        input.twoFactorCode
+      );
+      return result;
+    } catch (error: any) {
+      console.error('❌ Login error:', error?.message);
+      return {
+        access_token: null,
+        requiresTwoFactor: false,
+        message: error?.message || 'Login failed',
+        user: null
+      };
+    }
   }
 
   // ============================================

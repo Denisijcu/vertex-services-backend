@@ -38,14 +38,22 @@ export class PostQuantumCryptoService {
    * Verificar contraseña con hashing post-cuántico
    */
   verifyPassword(password: string, hash: string, salt: string): boolean {
-    const computed = crypto
-      .createHash('sha3-256')
-      .update(password + salt)
-      .digest('hex');
+  const computed = crypto
+    .createHash('sha3-256')
+    .update(password + salt)
+    .digest('hex');
 
-    // Usar constant-time comparison para evitar timing attacks
-    return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(hash));
+  // ✅ Comparación manual segura
+  if (computed.length !== hash.length) {
+    return false;
   }
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(hash));
+  } catch {
+    return false;
+  }
+}
 
   // ============================================
   // 2. HYBRID ENCRYPTION (Clásica + Post-Cuántica)

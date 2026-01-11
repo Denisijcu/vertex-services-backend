@@ -156,6 +156,21 @@ enum JobStatus {
   PENDING_PAYMENT
 }
 
+type JobType {
+  _id: ID!
+  acceptedAt: String
+  category: String!
+  client: UserType
+  completedAt: String
+  createdAt: String!
+  description: String!
+  location: String!
+  price: Float!
+  provider: UserType
+  status: String!
+  title: String!
+}
+
 type JobUserInfo {
   _id: ID!
   avatar: String
@@ -196,13 +211,29 @@ type MessageResponse {
 }
 
 type Mutation {
+  """Aceptar un trabajo disponible"""
+  acceptJob(id: String!): JobType!
   addComment(authorId: String!, authorName: String!, avatar: String, content: String!, pulseId: String!): PulsePost!
+
+  """Agregar servicio ofrecido"""
+  addService(input: ServiceInput!): UserProfileType!
+
+  """Agregar imagen a galería"""
+  addToGallery(imageUrl: String!): UserProfileType!
+
+  """Cancelar un trabajo"""
+  cancelJob(id: String!): JobType!
   changePassword(newPassword: String!, oldPassword: String!): User!
   changeUserRole(newRole: String!, userId: String!): UserInfoType!
   chatWithBot(input: ChatInput!): BotResponse!
+
+  """Completar un trabajo"""
+  completeJob(id: String!): JobType!
   confirm2FA(input: TwoFactorCodeInput!): MessageResponse!
   createCategory(input: CreateCategoryInput!): Category!
-  createJob(input: CreateJobInput!): UserInfoType!
+
+  """Crear un nuevo trabajo"""
+  createJob(input: CreateJobInput!): JobType!
   createJobPayment(jobId: ID!): Transaction!
   createPulsePost(authorId: String!, authorName: String, avatar: String, category: String, content: String!, imageUrl: String, mediaType: String, mediaUrl: String): PulsePost!
   createServiceRequest(input: CreateJobInputData!): Job!
@@ -227,6 +258,12 @@ type Mutation {
   refundPayment(jobId: ID!, reason: String): RefundResponse!
   register(input: RegisterInput!): MessageResponse!
   releasePayment(jobId: ID!): Transaction!
+
+  """Eliminar imagen de galería"""
+  removeFromGallery(imageUrl: String!): UserProfileType!
+
+  """Eliminar servicio ofrecido"""
+  removeService(serviceTitle: String!): UserProfileType!
   reorderCategories(orders: [String!]!): Boolean!
   resetToDefaultSettings: Settings!
   sendFileMessage(input: SendFileMessageInput!): ChatMessage!
@@ -238,7 +275,12 @@ type Mutation {
   updateGallery(urls: [String!]!): User!
   updateJobStatus(jobId: ID!, status: String!): Job!
   updateProfessionalProfile(input: UpdateProfessionalProfileInput!): User!
-  updateProfile(input: UpdateProfileInput!): UserInfoType!
+
+  """Actualizar perfil de usuario"""
+  updateProfile(input: UpdateProfileInput!): UserProfileType!
+
+  """Actualizar redes sociales"""
+  updateSocialLinks(input: SocialLinksInput!): UserProfileType!
   verifyEmail(input: VerifyEmailInput!): MessageResponse!
   vertexCleanStats: String!
   withdrawFunds(amount: Float!): Transaction!
@@ -294,7 +336,6 @@ type PulsePost {
 }
 
 type Query {
-  findAll: [UserInfoType!]!
   findAllUsers: [UserInfoType!]!
   getAISettings: Settings
   getAllJobs: [Job!]!
@@ -320,11 +361,29 @@ type Query {
   getPulsePosts(categoryId: String): [PulsePost!]!
   getStripeAccountStatus: String!
   getUserProfile(userId: ID): User
+
+  """Obtener un trabajo por ID"""
+  job(id: String!): JobType
+
+  """Obtener todos los trabajos"""
+  jobs(category: String, status: String): [JobType]!
   me: UserInfo!
   myJobs: [Job!]!
 
+  """Obtener mis trabajos como cliente"""
+  myJobsAsClient: [JobType]!
+
+  """Obtener mis trabajos como proveedor"""
+  myJobsAsProvider: [JobType]!
+
+  """Buscar proveedores de servicios"""
+  providers(category: String, location: String, minRating: Float, search: String): [UserProfileType]!
+
   """Buscar categorías por término"""
   searchCategories(term: String!): [Category!]!
+
+  """Ver perfil de un usuario"""
+  userProfile(id: String!): UserProfileType
 }
 
 type RefundResponse {
@@ -377,6 +436,13 @@ enum ServiceCategory {
   TECHNICAL_SUPPORT
   TRAINING
   TRANSPORTATION
+}
+
+input ServiceInput {
+  category: String!
+  description: String!
+  pricePerHour: Float!
+  title: String!
 }
 
 input ServiceOfferInput {
@@ -529,7 +595,6 @@ input UpdateProfileInput {
   location: String
   name: String
   phone: String
-  socialLinks: SocialLinksInput
 }
 
 type User {
@@ -586,6 +651,24 @@ type UserInfoType {
   phone: String
   role: String!
   totalEarned: Float
+}
+
+type UserProfileType {
+  _id: ID!
+  avatar: String
+  bio: String
+  email: String!
+  emailVerified: Boolean!
+  gallery: [String!]
+  isActive: Boolean!
+  lastLogin: String
+  location: String
+  name: String!
+  phone: String
+  role: String!
+  servicesOffered: [ServiceOfferedType!]
+  socialLinks: SocialLinksType
+  stats: StatsType
 }
 
 enum UserRole {

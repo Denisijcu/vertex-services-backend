@@ -14,109 +14,117 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
     private postQuantumCrypto: PostQuantumCryptoService, // ✅ INYECTAR
-  ) {}
+  ) { }
 
-// ============================================
-// 1. REGISTRO DE USUARIO
-// ============================================
-async register(
-  email: string, 
-  password: string, 
-  name: string, 
-  role?: string, 
-  termsAccepted?: boolean
-) {
-  // Validaciones
-  if (!email || !password || !name) {
-    throw new BadRequestException('All fields are required');
-  }
+  // ============================================
+  // 1. REGISTRO DE USUARIO
+  // ============================================
+  async register(
+    email: string,
+    password: string,
+    name: string,
+    role?: string,
+    termsAccepted?: boolean
+  ) {
+    try {
+      // Validaciones
+      if (!email || !password || !name) {
+        throw new BadRequestException('All fields are required');
+      }
 
-  if (!termsAccepted) {
-    throw new BadRequestException('You must accept the Terms of Service and Privacy Policy');
-  }
+      if (!termsAccepted) {
+        throw new BadRequestException('You must accept the Terms of Service and Privacy Policy');
+      }
 
-  // Verificar si ya existe
-  const existingUser = await this.userModel.findOne({ email: email.toLowerCase() });
-  if (existingUser) {
-    throw new UnauthorizedException('Email is already registered');
-  }
+      // Verificar si ya existe
+      const existingUser = await this.userModel.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        throw new BadRequestException('Email is already registered');
+      }
 
-  // Validar contraseña fuerte
-  if (password.length < 8) {
-    throw new BadRequestException('Password must be at least 8 characters long');
-  }
+      // Validar contraseña fuerte
+      if (password.length < 8) {
+        throw new BadRequestException('Password must be at least 8 characters long');
+      }
 
-  // 🔐 USAR POST-QUANTUM HASHING PARA NUEVOS USUARIOS
-  const { hash: hashedPassword, salt } = this.postQuantumCrypto.hashPassword(password);
+      // 🔐 USAR BCRYPT TEMPORALMENTE (sin post-quantum por ahora)
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-  // Generar token de verificación de email
-  const emailVerificationToken = this.generateRandomToken();
+      // Generar token de verificación de email
+      const emailVerificationToken = this.generateRandomToken();
 
-  // Crear usuario
-  const newUser = new this.userModel({
-    email: email.toLowerCase(),
-    password: hashedPassword, // ✅ SHA-3 post-quantum
-    passwordSalt: salt, // ✅ Guardar salt
-    name,
-    role: role || 'CLIENT',
-    emailVerificationToken,
-    emailVerified: false,
-    termsAcceptedAt: new Date(),
-    // 🔐 MARCAR COMO POST-QUANTUM
-    cryptoAlgorithm: 'SHA3-PBKDF2-KYBER',
-    quantumSafeEnabled: true,
-    stats: {
-      jobsCompleted: 0,
-      jobsReceived: 0,
-      totalEarned: 0,
-      totalSpent: 0,
-      averageRating: 5.0,
-      totalReviews: 0
+      // Crear usuario
+      const newUser = new this.userModel({
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        name,
+        role: role || 'CLIENT',
+        emailVerificationToken,
+        emailVerified: false,
+        termsAcceptedAt: new Date(),
+        stats: {
+          jobsCompleted: 0,
+          jobsReceived: 0,
+          totalEarned: 0,
+          totalSpent: 0,
+          averageRating: 5.0,
+          totalReviews: 0
+        }
+      });
+
+      await newUser.save();
+
+      console.log(`📧 Email verification: http://localhost:4200/verify-email?token=${emailVerificationToken}`);
+
+      return {
+        message: 'User registered successfully. Please verify your email to activate your account.',
+        emailVerificationToken
+      };
+    } catch (error) {
+      console.error('❌ Register error:', error);
+      throw error;
     }
-  });
-
-  await newUser.save();
-
-  console.log(`📧 Email verification: http://localhost:4200/verify-email?token=${emailVerificationToken}`);
-
-  return { 
-    message: 'User registered successfully. Please verify your email to activate your account.',
-    emailVerificationToken
-  };
-}
+  }
 
   // ============================================
   // 2. LOGIN (SOPORTA AMBOS: bcrypt y post-quantum)
   // ============================================
+// ============================================
+  // 2. LOGIN (SOPORTA AMBOS: bcrypt y post-quantum)
+  // ============================================
   async login(email: string, password: string, twoFactorCode?: string) {
     const user = await this.userModel.findOne({ email: email.toLowerCase() });
-    
+
     if (!user) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new BadRequestException('Credenciales inválidas');
     }
 
     // 🔐 VERIFICAR: Si tiene salt, usa post-quantum. Si no, usa bcrypt (compatibilidad)
     let isPasswordValid = false;
-    
+
     if (user.passwordSalt) {
-      // Usuario post-quantum
-      isPasswordValid = this.postQuantumCrypto.verifyPassword(
-        password,
-        user.password,
-        user.passwordSalt
-      );
+      try {
+        isPasswordValid = this.postQuantumCrypto.verifyPassword(
+          password,
+          user.password,
+          user.passwordSalt
+        );
+      } catch (error) {
+        console.error('❌ Verify error:', error);
+        isPasswordValid = false;
+      }
     } else {
       // Usuario legacy (bcrypt)
       isPasswordValid = await bcrypt.compare(password, user.password);
     }
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new BadRequestException('Credenciales inválidas');
     }
 
     // Verificar si está activo
     if (!user.isActive) {
-      throw new UnauthorizedException('Tu cuenta ha sido desactivada');
+      throw new BadRequestException('Tu cuenta ha sido desactivada');
     }
 
     // Si tiene 2FA habilitado, verificar código
@@ -136,24 +144,24 @@ async register(
       });
 
       if (!isValid) {
-        throw new UnauthorizedException('Código 2FA inválido');
+        throw new BadRequestException('Código 2FA inválido');
       }
     }
 
     // Actualizar último login
     user.lastLogin = new Date();
-    user.lastLoginQuantumSafe = user.passwordSalt ? true : false; // ✅ Marcar si es post-quantum
+    user.lastLoginQuantumSafe = user.passwordSalt ? true : false;
     await user.save();
 
     // Crear payload del token
-    const payload = { 
-      email: user.email, 
-      sub: user._id, 
+    const payload = {
+      email: user.email,
+      sub: user._id,
       name: user.name,
       role: user.role,
-      quantumSafe: user.passwordSalt ? true : false // ✅ Indicar en token si es post-quantum
+      quantumSafe: user.passwordSalt ? true : false
     };
-    
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {

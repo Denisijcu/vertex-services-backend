@@ -1,11 +1,10 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql'; // 👈 Agrega ID aquí
-import { UseGuards } from '@nestjs/common';
-import { UserService } from './auth/user.service';
-import { User } from './user.schema';
+import { BadRequestException, UseGuards } from '@nestjs/common';
+import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql'; // 👈 Agrega ID aquí
 import { GqlAuthGuard } from './auth/graphql-auth.guard';
+import { UserService } from './auth/user.service';
 import { CurrentUser } from './app.resolver';
 import { UpdateProfessionalProfileInput } from './user-profile.input';
-import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { User } from './user.schema';
 
 @Resolver(() => User)
 export class UserResolver {

@@ -1,13 +1,13 @@
-import { Resolver, Query, Context, Mutation, Args, ID } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
-import { JobService } from './auth/job.service';
-import { Job } from './job.schema';
-import { CreateJobInput } from './create-job.input';
+import { Args, Context, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GqlAuthGuard } from './auth/graphql-auth.guard';
-import { CurrentUser } from './app.resolver';
-import { UserService } from './auth/user.service';
+import { JobService } from './auth/job.service';
 import { NotificationService } from './auth/notification.service';
+import { UserService } from './auth/user.service';
 import { ChatService } from './chat.service';
+import { CreateJobInput } from './create-job.input';
+import { CurrentUser } from './app.resolver';
+import { Job } from './job.schema';
 
 @Resolver(() => Job)
 export class JobResolver {
@@ -120,21 +120,34 @@ export class JobResolver {
 
     @Query(() => [Job])
     @UseGuards(GqlAuthGuard)
-    myJobs(@Context() ctx) {
-        const user = ctx.req.user;
-        return this.jobService.findMyJobs(user._id);
+    async myJobs(@CurrentUser() user: any) {
+        try {
+            console.log('📋 Fetching jobs for user:', user._id);
+            return await this.jobService.findMyJobs(user._id);
+        } catch (error: any) {
+            console.error('❌ MyJobs error:', error?.message);
+            return [];
+        }
     }
-
-    // En job.resolver.ts
     @Query(() => [Job])
     @UseGuards(GqlAuthGuard)
     async getMyClientJobs(@CurrentUser() user: any) {
-        return this.jobService.findJobsAsClient(user._id);
+        try {
+            return await this.jobService.findJobsAsClient(user._id);
+        } catch (error: any) {
+            console.error('❌ Client jobs error:', error?.message);
+            return [];
+        }
     }
 
     @Query(() => [Job])
     @UseGuards(GqlAuthGuard)
     async getMyProviderJobs(@CurrentUser() user: any) {
-        return this.jobService.findJobsAsProvider(user._id);
+        try {
+            return await this.jobService.findJobsAsProvider(user._id);
+        } catch (error: any) {
+            console.error('❌ Provider jobs error:', error?.message);
+            return [];
+        }
     }
 }
