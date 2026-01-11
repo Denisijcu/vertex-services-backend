@@ -18,6 +18,9 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
+// ✅ AGREGAR ESTO
+import { GqlExecutionContext as GqlContext } from '@nestjs/graphql';
+
 // SCHEMAS Y SEGURIDAD
 import { Job, JobDocument, JobStatus } from './job.schema';
 import { User, UserDocument } from './user.schema';
@@ -28,14 +31,18 @@ import { UserInfoType } from './user-info-type';
 import { GeneralStatsType } from './general-stats-type';
 
 /* ==========================================================================
-   CURRENT USER DECORATOR (Corregido: ExecutionContext de @nestjs/common)
+   CURRENT USER DECORATOR (Corregido)
    ========================================================================== */
 export const CurrentUser = createParamDecorator(
   (_: unknown, context: ExecutionContext) => {
-    const ctx = GqlExecutionContext.create(context);
+    const ctx = GqlContext.create(context); // ✅ CAMBIAR AQUÍ
     return ctx.getContext().req.user;
   },
 );
+
+
+
+
 
 /* ==========================================================================
    GRAPHQL INPUT TYPES (Inputs locales para el Resolver)
