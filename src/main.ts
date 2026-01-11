@@ -13,13 +13,13 @@ async function bootstrap() {
   app.use(express.urlencoded({ limit: '200mb', extended: true }));
 
   // 2. CORS CON HEADERS APOLLO
+ 
   app.enableCors({
-    origin: 'http://localhost:4200',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: ['https://tu-app-angular.netlify.app', 'http://localhost:4200'],
+  credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'apollo-require-preflight', 'x-apollo-operation-name']
-  });
-
+});
   // Raw body para webhooks de Stripe
   app.use('/webhooks/stripe', json({
     verify: (req: any, res, buf) => {
