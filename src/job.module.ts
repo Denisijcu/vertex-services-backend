@@ -6,14 +6,23 @@ import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    // Usamos forwardRef si AuthModule también importa a UserModule
-    forwardRef(() => AuthModule), 
+    AuthModule, 
+    UserModule, 
+    ChatModule,
+    MongooseModule.forFeature([
+      { name: Job.name, schema: JobSchema },
+      { name: Notification.name, schema: NotificationSchema },
+    ]),
   ],
-  providers: [UserService],
+  providers: [
+    JobResolver, 
+    JobService,
+    NotificationService,
+  ],
   exports: [
-    UserService, 
-    MongooseModule // 👈 ¡AÑADE ESTO AQUÍ TAMBIÉN!
-  ] 
+    JobService, 
+    NotificationService, 
+    MongooseModule // Vital para que AppResolver vea los modelos
+  ], 
 })
-export class UserModule {}
+export class JobModule {} // 👈 ASEGÚRATE DE QUE TENGA EL 'export'
