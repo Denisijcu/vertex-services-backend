@@ -10,13 +10,12 @@ async function bootstrap() {
 
 
     // ✅ AGREGAR ESTO
-  app.enableCors({
-    origin: '*',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  });
-
+ app.enableCors({
+  origin: 'https://vertexservicespro.netlify.app', // tu frontend
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+});
 
   // 1. Aumentar el límite de carga (Payload)
   // Esto permite que el servidor acepte los strings largos de tus fotos/videos
