@@ -1,4 +1,41 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Float, Enum } from '@nestjs/graphql';
+import { JobStatus, ServiceCategory, PaymentStatus } from './job.schema';
+
+@ObjectType('JobUserInfo')
+export class UserInfoType {
+  @Field(() => ID)
+  _id: string;
+
+  @Field()
+  name: string;
+
+  @Field()
+  email: string;
+
+  @Field({ nullable: true })
+  avatar?: string;
+}
+
+@ObjectType()
+export class PaymentType {
+  @Field(() => PaymentStatus)
+  status: PaymentStatus;
+
+  @Field(() => Float)
+  amount: number;
+
+  @Field({ nullable: true })
+  stripePaymentIntentId?: string;
+
+  @Field({ nullable: true })
+  stripeChargeId?: string;
+
+  @Field({ nullable: true })
+  paidAt?: Date;
+
+  @Field({ nullable: true })
+  refundedAt?: Date;
+}
 
 @ObjectType()
 export class JobType {
@@ -11,43 +48,45 @@ export class JobType {
   @Field()
   description: string;
 
-  @Field()
-  status: string;
-
-  @Field()
+  @Field(() => Float)
   price: number;
 
-  @Field({ nullable: true })
-  location?: string;
-
-  @Field({ nullable: true })
-  category?: string;
-
-  @Field(() => UserBasicType, { nullable: true })
-  client?: UserBasicType;
-
-  @Field(() => UserBasicType, { nullable: true })
-  provider?: UserBasicType;
-
-  @Field({ nullable: true })
-  createdAt?: string;
-
-  @Field({ nullable: true })
-  updatedAt?: string;
-}
-
-// Crear este tipo para evitar referencias circulares
-@ObjectType()
-export class UserBasicType {
-  @Field(() => ID)
-  _id: string;
-
   @Field()
-  name: string;
+  location: string;
 
-  @Field()
-  email: string;
+  @Field(() => ServiceCategory)
+  category: ServiceCategory;
+
+  @Field(() => JobStatus)
+  status: JobStatus;
+
+  @Field(() => UserInfoType)
+  client: UserInfoType;
+
+  @Field(() => UserInfoType, { nullable: true })
+  provider?: UserInfoType;
+
+  @Field(() => [String], { nullable: 'items' })
+  images?: string[];
 
   @Field({ nullable: true })
-  avatar?: string;
+  deadline?: Date;
+
+  @Field(() => PaymentType, { nullable: true })
+  payment?: PaymentType;
+
+  @Field({ nullable: true })
+  acceptedAt?: Date;
+
+  @Field({ nullable: true })
+  completedAt?: Date;
+
+  @Field(() => Float)
+  views: number;
+
+  @Field({ nullable: true })
+  createdAt?: Date;
+
+  @Field({ nullable: true })
+  updatedAt?: Date;
 }
