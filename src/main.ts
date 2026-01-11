@@ -8,6 +8,16 @@ async function bootstrap() {
   const logger = new Logger('VertexBootstrap');
   const app = await NestFactory.create(AppModule);
 
+
+    // ✅ AGREGAR ESTO
+  app.enableCors({
+    origin: '*',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+
   // 1. Aumentar el límite de carga (Payload)
   // Esto permite que el servidor acepte los strings largos de tus fotos/videos
   app.use(express.json({ limit: '200mb' }));
