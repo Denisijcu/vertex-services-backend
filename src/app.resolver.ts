@@ -77,8 +77,7 @@ class UserProfileType {
   @Field(() => [ServiceOfferedType], { nullable: true })
   servicesOffered?: ServiceOfferedType[];
 
-  @Field(() => SocialLinksType, { nullable: true })
-  socialLinks?: SocialLinksType;
+
 
   @Field(() => StatsType, { nullable: true })
   stats?: StatsType;
@@ -228,23 +227,7 @@ class ServiceInput {
   pricePerHour: number;
 }
 
-@InputType()
-class SocialLinksInput {
-  @Field({ nullable: true })
-  linkedin?: string;
 
-  @Field({ nullable: true })
-  twitter?: string;
-
-  @Field({ nullable: true })
-  instagram?: string;
-
-  @Field({ nullable: true })
-  github?: string;
-
-  @Field({ nullable: true })
-  facebook?: string;
-}
 
 // En tu archivo de tipos o AppResolver
 @ObjectType()
