@@ -1,33 +1,19 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common'; // Agregamos forwardRef por seguridad
 import { MongooseModule } from '@nestjs/mongoose';
-import { JobResolver } from './job.resolver';
-import { JobService } from './auth/job.service';
-import { Job, JobSchema } from './job.schema';
-import { Notification, NotificationSchema } from './notification.schema';
-import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user.module';
-import { NotificationService } from './auth/notification.service';
-import { ChatModule } from './chat.module'
+import { UserService } from './auth/user.service';
+import { User, UserSchema } from './user.schema';
+import { AuthModule } from './auth/auth.module'; 
 
 @Module({
   imports: [
-    AuthModule, 
-    UserModule, 
-    ChatModule,
-    MongooseModule.forFeature([
-      { name: Job.name, schema: JobSchema },
-      { name: Notification.name, schema: NotificationSchema },
-    ]),
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    // Usamos forwardRef si AuthModule también importa a UserModule
+    forwardRef(() => AuthModule), 
   ],
-  providers: [
-    JobResolver, 
-    JobService,
-    NotificationService,
-  ],
+  providers: [UserService],
   exports: [
-    JobService, 
-    NotificationService, 
-    MongooseModule // 👈 ¡AGREGA ESTO! Es la clave para que AppResolver vea el JobModel
-  ], 
+    UserService, 
+    MongooseModule // 👈 ¡AÑADE ESTO AQUÍ TAMBIÉN!
+  ] 
 })
-export class JobModule {}
+export class UserModule {}
