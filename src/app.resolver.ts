@@ -43,7 +43,44 @@ export const CurrentUser = createParamDecorator(
 // TIPOS GRAPHQL - OBJECTS
 // ============================================
 
+@ObjectType()
+class JobType {
+  @Field(() => ID)
+  _id: string;
 
+  @Field()
+  title: string;
+
+  @Field()
+  description: string;
+
+  @Field(() => Float)
+  price: number;
+
+  @Field()
+  location: string;
+
+  @Field()
+  category: string;
+
+  @Field()
+  status: string;
+
+  @Field(() => UserType, { nullable: true })
+  client?: UserType;
+
+  @Field(() => UserType, { nullable: true })
+  provider?: UserType;
+
+  @Field()
+  createdAt: string;
+
+  @Field({ nullable: true })
+  acceptedAt?: string;
+
+  @Field({ nullable: true })
+  completedAt?: string;
+}
 
 
 
