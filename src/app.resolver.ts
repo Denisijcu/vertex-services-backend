@@ -25,7 +25,7 @@ import {
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { GqlAuthGuard } from './auth/graphql-auth.guard';
 
-
+import { UserType } from './graphql.types';
 
 
 // ============================================
@@ -42,26 +42,7 @@ export const CurrentUser = createParamDecorator(
 // TIPOS GRAPHQL - OBJECTS
 // ============================================
 
-@ObjectType()
-class UserType {
-  @Field(() => ID)
-  _id: string;
 
-  @Field()
-  name: string;
-
-  @Field()
-  email: string;
-
-  @Field({ nullable: true })
-  avatar?: string;
-
-  @Field({ nullable: true })
-  bio?: string;
-
-  @Field({ nullable: true })
-  location?: string;
-}
 
 @ObjectType()
 class ServiceOfferedType {
