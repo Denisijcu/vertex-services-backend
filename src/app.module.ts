@@ -14,7 +14,7 @@ import { PulseModule } from './pulse/pulse.module';
 
 // Schemas y Resolvers globales
 import { AdminResolver } from './admin.resolver';
-import { AppResolver } from './app.resolver';
+import { AppResolver } from './app.resolver_old';
 import { UserResolver } from './user.resolver';
 import { CategoryResolver } from './category.resolver';
 import { CategoryService } from './category.service';
