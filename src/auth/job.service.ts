@@ -62,7 +62,7 @@ export class JobService {
     // ✅ Cuando acepta el job (OPEN → PENDING_PAYMENT)
     if (status === 'PENDING_PAYMENT' && oldStatus === 'OPEN') {
       updateData.acceptedAt = new Date();
-      console.log(`✅ Provider accepted job: ${job.title}`);
+     // console.log(`✅ Provider accepted job: ${job.title}`);
     }
 
     // ✅ Cuando completa el job
@@ -70,7 +70,7 @@ export class JobService {
       updateData.completedAt = new Date();
 
       if (job.provider && job.provider._id) {
-        console.log(`💰 Job completed: ${job.title} - $${job.price}`);
+      //  console.log(`💰 Job completed: ${job.title} - $${job.price}`);
         await this.userService.incrementUserEarnings(
           job.provider._id.toString(),
           job.price
