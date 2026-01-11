@@ -118,12 +118,11 @@ export class JobResolver {
         return updatedJob;
     }
 
-    @Query(() => [Job])
-    @UseGuards(GqlAuthGuard)
-    myJobs(@Context() ctx) {
-        const user = ctx.req.user;
-        return this.jobService.findMyJobs(user._id);
-    }
+   @Query(() => [Job])
+@UseGuards(GqlAuthGuard)
+async myJobs(@CurrentUser() user: any) {
+  return this.jobService.findMyJobs(user._id);
+}
 
     // En job.resolver.ts
     @Query(() => [Job])
