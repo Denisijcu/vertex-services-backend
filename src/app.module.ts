@@ -44,10 +44,13 @@ const isProduction = process.env.NODE_ENV === 'production';
   driver: ApolloDriver,
   autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
   sortSchema: true,
-  playground: !isProduction,
-  introspection: !isProduction,
+  playground: process.env.NODE_ENV !== 'production',
+  introspection: process.env.NODE_ENV !== 'production',
   context: ({ req, res }) => ({ req, res }),
+  
+  // ✅ CONFIGURACIÓN MÍNIMA - SIN VALIDACIONES
   csrfPrevention: false,
+  
   formatError: (error) => {
     console.error('GraphQL Error:', error);
     return {
