@@ -25,9 +25,9 @@ import {
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { GqlAuthGuard } from './auth/graphql-auth.guard';
 
-import { UserType } from './graphql.types';
-import { ServiceOfferedType } from './graphql.types';
-import { StatsType } from './stats.type';
+//import { UserType } from './graphql.types';
+//import { ServiceOfferedType } from './graphql.types';
+import { StatsType, UserType, ServiceOfferedType } from './graphql.types';
 
 
 // ============================================
@@ -77,8 +77,6 @@ class UserProfileType {
 
   @Field(() => [ServiceOfferedType], { nullable: true })
   servicesOffered?: ServiceOfferedType[];
-
-
 
   @Field(() => StatsType, { nullable: true })
   stats?: StatsType;
