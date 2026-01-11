@@ -85,14 +85,14 @@ export class JobService {
     ).exec();
   }
 
-  findMyJobs(userId: string) {
-    return this.jobModel.find({
-      $or: [
-        { 'client._id': userId },
-        { 'provider._id': userId }
-      ]
-    }).sort({ createdAt: -1 }); // 👈 Ordenados por el más reciente
-  }
+  async findMyJobs(userId: string): Promise<JobDocument[]> {
+  return await this.jobModel.find({
+    $or: [
+      { 'client._id': userId },
+      { 'provider._id': userId }
+    ]
+  }).sort({ createdAt: -1 }).exec(); // ✅ AGREGAR .exec()
+}
 
   async acceptJob(jobId: string, userId: string) {
     return this.jobModel.findByIdAndUpdate(
