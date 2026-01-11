@@ -569,24 +569,7 @@ export class AppResolver {
     return updatedUser;
   }
 
-  @Mutation(() => UserProfileType, { description: 'Actualizar redes sociales' })
-  @UseGuards(GqlAuthGuard)
-  async updateSocialLinks(
-    @CurrentUser() user: any,
-    @Args('input') input: SocialLinksInput
-  ) {
-    const updatedUser = await this.userModel.findByIdAndUpdate(
-      user._id,
-      { $set: { socialLinks: input } },
-      { new: true }
-    ).select('-password');
 
-    if (!updatedUser) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
-
-    return updatedUser;
-  }
 
   @Mutation(() => UserProfileType, { description: 'Agregar imagen a galería' })
   @UseGuards(GqlAuthGuard)
