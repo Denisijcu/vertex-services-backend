@@ -27,6 +27,7 @@ import { GqlAuthGuard } from './auth/graphql-auth.guard';
 
 import { UserType } from './graphql.types';
 import { ServiceOfferedType } from './graphql.types';
+import { StatsType } from './stats.type';
 
 
 // ============================================
@@ -92,44 +93,7 @@ class UserProfileType {
   lastLogin?: string;
 }
 
-@ObjectType()
-class SocialLinksType {
-  @Field({ nullable: true })
-  linkedin?: string;
 
-  @Field({ nullable: true })
-  twitter?: string;
-
-  @Field({ nullable: true })
-  instagram?: string;
-
-  @Field({ nullable: true })
-  github?: string;
-
-  @Field({ nullable: true })
-  facebook?: string;
-}
-
-@ObjectType()
-class StatsType {
-  @Field(() => Float)
-  jobsCompleted: number;
-
-  @Field(() => Float)
-  jobsReceived: number;
-
-  @Field(() => Float)
-  totalEarned: number;
-
-  @Field(() => Float)
-  totalSpent: number;
-
-  @Field(() => Float)
-  averageRating: number;
-
-  @Field(() => Float)
-  totalReviews: number;
-}
 
 @ObjectType()
 class JobType {
