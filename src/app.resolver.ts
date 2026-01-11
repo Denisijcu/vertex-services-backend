@@ -27,6 +27,7 @@ import { GqlAuthGuard } from './auth/graphql-auth.guard';
 
 //import { UserType } from './graphql.types';
 //import { ServiceOfferedType } from './graphql.types';
+
 import { StatsType, ServiceOfferedType, UserProfileType, JobType } from './graphql.types';
 
 
