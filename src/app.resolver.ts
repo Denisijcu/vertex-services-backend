@@ -18,8 +18,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
-// ✅ AGREGAR ESTO
-import { GqlExecutionContext as GqlContext } from '@nestjs/graphql';
+
 
 // SCHEMAS Y SEGURIDAD
 import { Job, JobDocument, JobStatus } from './job.schema';
