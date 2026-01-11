@@ -6,7 +6,7 @@ import { Job, JobSchema } from './job.schema';
 import { Notification, NotificationSchema } from './notification.schema';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user.module';
-import { NotificationService } from './auth/notification.service'; // 👈 Asegúrate de importar el SERVICIO aquí
+import { NotificationService } from './auth/notification.service';
 import { ChatModule } from './chat.module'
 
 @Module({
@@ -22,8 +22,12 @@ import { ChatModule } from './chat.module'
   providers: [
     JobResolver, 
     JobService,
-    NotificationService, // 👈 REGÍSTRALO AQUÍ como proveedor
+    NotificationService,
   ],
-  exports: [JobService, NotificationService], // Expórtalo por si lo usas en otro lado
+  exports: [
+    JobService, 
+    NotificationService, 
+    MongooseModule // 👈 ¡AGREGA ESTO! Es la clave para que AppResolver vea el JobModel
+  ], 
 })
 export class JobModule {}
