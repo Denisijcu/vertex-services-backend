@@ -44,6 +44,55 @@ export const CurrentUser = createParamDecorator(
 // ============================================
 
 @ObjectType()
+class UserProfileType {
+  @Field(() => ID)
+  _id: string;
+
+  @Field()
+  name: string;
+
+  @Field()
+  email: string;
+
+  @Field({ nullable: true })
+  bio?: string;
+
+  @Field({ nullable: true })
+  phone?: string;
+
+  @Field({ nullable: true })
+  location?: string;
+
+  @Field()
+  role: string;
+
+  @Field({ nullable: true })
+  avatar?: string;
+
+  @Field(() => [String], { nullable: true })
+  gallery?: string[];
+
+  @Field(() => [ServiceOfferedType], { nullable: true })
+  servicesOffered?: ServiceOfferedType[];
+
+  @Field(() => SocialLinksType, { nullable: true })
+  socialLinks?: SocialLinksType;
+
+  @Field(() => StatsType, { nullable: true })
+  stats?: StatsType;
+
+  @Field()
+  emailVerified: boolean;
+
+  @Field()
+  isActive: boolean;
+
+  @Field({ nullable: true })
+  lastLogin?: string;
+}
+
+
+@ObjectType()
 class JobType {
   @Field(() => ID)
   _id: string;
