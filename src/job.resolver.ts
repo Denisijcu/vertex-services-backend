@@ -1,7 +1,8 @@
 import { Resolver, Query, Context, Mutation, Args, ID } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { JobService } from './auth/job.service';
-import { Job } from './job.schema';
+
+import { JobType } from './job.type';
 import { CreateJobInput } from './create-job.input';
 import { GqlAuthGuard } from './auth/graphql-auth.guard';
 import { CurrentUser } from './app.resolver';
