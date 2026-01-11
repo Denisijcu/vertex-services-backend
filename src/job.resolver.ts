@@ -20,7 +20,7 @@ export class JobResolver {
     ) { }
 
     // Mutation para que un cliente contacte a un proveedor
-    @Mutation(() => Job)
+    @Mutation(() => JobType)
     @UseGuards(GqlAuthGuard)
     async createServiceRequest(
         @Args('input') input: CreateJobInput,
