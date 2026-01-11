@@ -27,7 +27,7 @@ import { GqlAuthGuard } from './auth/graphql-auth.guard';
 
 //import { UserType } from './graphql.types';
 //import { ServiceOfferedType } from './graphql.types';
-import { StatsType, UserType, ServiceOfferedType } from './graphql.types';
+import { StatsType, UserType, ServiceOfferedType, UserProfileType } from './graphql.types';
 
 
 // ============================================
@@ -45,51 +45,6 @@ export const CurrentUser = createParamDecorator(
 // ============================================
 
 
-
-@ObjectType()
-class UserProfileType {
-  @Field(() => ID)
-  _id: string;
-
-  @Field()
-  name: string;
-
-  @Field()
-  email: string;
-
-  @Field({ nullable: true })
-  bio?: string;
-
-  @Field({ nullable: true })
-  phone?: string;
-
-  @Field({ nullable: true })
-  location?: string;
-
-  @Field()
-  role: string;
-
-  @Field({ nullable: true })
-  avatar?: string;
-
-  @Field(() => [String], { nullable: true })
-  gallery?: string[];
-
-  @Field(() => [ServiceOfferedType], { nullable: true })
-  servicesOffered?: ServiceOfferedType[];
-
-  @Field(() => StatsType, { nullable: true })
-  stats?: StatsType;
-
-  @Field()
-  emailVerified: boolean;
-
-  @Field()
-  isActive: boolean;
-
-  @Field({ nullable: true })
-  lastLogin?: string;
-}
 
 
 
