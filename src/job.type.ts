@@ -1,5 +1,7 @@
-import { ObjectType, Field, ID, Float, Enum } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
 import { JobStatus, ServiceCategory, PaymentStatus } from './job.schema';
+
+// ✅ El resto del código igual
 
 @ObjectType('JobUserInfo')
 export class UserInfoType {
