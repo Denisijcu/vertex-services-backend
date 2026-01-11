@@ -259,16 +259,24 @@ export class AuthResolver {
   // ============================================
   // REGISTRO
   // ============================================
-  @Mutation(() => MessageResponse)
-  async register(@Args('input') input: RegisterInput) {
-    return this.authService.register(
-      input.email,
-      input.password,
-      input.name,
-      input.role,
-      input.termsAccepted
-    );
-  }
+
+@Mutation(() => MessageResponse)
+async register(@Args('input') input: RegisterInput) {
+  console.log('📝 Register input received:', input);
+  console.log('Email:', input.email);
+  console.log('Password:', input.password);
+  console.log('Name:', input.name);
+  console.log('Role:', input.role);
+  console.log('TermsAccepted:', input.termsAccepted);
+  
+  return this.authService.register(
+    input.email,
+    input.password,
+    input.name,
+    input.role,
+    input.termsAccepted
+  );
+}
 
   // ============================================
   // LOGIN
