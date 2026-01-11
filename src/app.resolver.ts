@@ -26,6 +26,7 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 import { GqlAuthGuard } from './auth/graphql-auth.guard';
 
 import { UserType } from './graphql.types';
+import { ServiceOfferedType } from './graphql.types';
 
 
 // ============================================
@@ -44,149 +45,7 @@ export const CurrentUser = createParamDecorator(
 
 
 
-@ObjectType()
-class ServiceOfferedType {
-  @Field()
-  category: string;
 
-  @Field()
-  title: string;
-
-  @Field()
-  description: string;
-
-  @Field(() => Float)
-  pricePerHour: number;
-
-  @Field()
-  isActive: boolean;
-}
-
-@ObjectType()
-class SocialLinksType {
-  @Field({ nullable: true })
-  linkedin?: string;
-
-  @Field({ nullable: true })
-  twitter?: string;
-
-  @Field({ nullable: true })
-  instagram?: string;
-
-  @Field({ nullable: true })
-  github?: string;
-
-  @Field({ nullable: true })
-  facebook?: string;
-}
-
-@ObjectType()
-class StatsType {
-  @Field(() => Float)
-  jobsCompleted: number;
-
-  @Field(() => Float)
-  jobsReceived: number;
-
-  @Field(() => Float)
-  totalEarned: number;
-
-  @Field(() => Float)
-  totalSpent: number;
-
-  @Field(() => Float)
-  averageRating: number;
-
-  @Field(() => Float)
-  totalReviews: number;
-}
-
-@ObjectType()
-class UserProfileType {
-  @Field(() => ID)
-  _id: string;
-
-  @Field()
-  name: string;
-
-  @Field()
-  email: string;
-
-  @Field({ nullable: true })
-  bio?: string;
-
-  @Field({ nullable: true })
-  phone?: string;
-
-  @Field({ nullable: true })
-  location?: string;
-
-  @Field()
-  role: string;
-
-  @Field({ nullable: true })
-  avatar?: string;
-
-  @Field(() => [String], { nullable: true })
-  gallery?: string[];
-
-  @Field(() => [ServiceOfferedType], { nullable: true })
-  servicesOffered?: ServiceOfferedType[];
-
-  @Field(() => SocialLinksType, { nullable: true })
-  socialLinks?: SocialLinksType;
-
-  @Field(() => StatsType, { nullable: true })
-  stats?: StatsType;
-
-  @Field()
-  emailVerified: boolean;
-
-  @Field()
-  isActive: boolean;
-
-  @Field({ nullable: true })
-  lastLogin?: string;
-}
-
-@ObjectType()
-class JobType {
-  @Field(() => ID)
-  _id: string;
-
-  @Field()
-  title: string;
-
-  @Field()
-  description: string;
-
-  @Field(() => Float)
-  price: number;
-
-  @Field()
-  location: string;
-
-  @Field()
-  category: string;
-
-  @Field()
-  status: string;
-
-  @Field(() => UserType, { nullable: true })
-  client?: UserType;
-
-  @Field(() => UserType, { nullable: true })
-  provider?: UserType;
-
-  @Field()
-  createdAt: string;
-
-  @Field({ nullable: true })
-  acceptedAt?: string;
-
-  @Field({ nullable: true })
-  completedAt?: string;
-}
 
 // ============================================
 // TIPOS GRAPHQL - INPUTS
