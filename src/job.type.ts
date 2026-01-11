@@ -1,9 +1,7 @@
 import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
 import { JobStatus, ServiceCategory, PaymentStatus } from './job.schema';
 
-// ✅ El resto del código igual
-
-@ObjectType('JobUserInfo')
+@ObjectType('UserBasicInfo') // ✅ CAMBIAR NOMBRE
 export class UserInfoType {
   @Field(() => ID)
   _id: string;
@@ -62,10 +60,10 @@ export class JobType {
   @Field(() => JobStatus)
   status: JobStatus;
 
-  @Field(() => UserInfoType)
+  @Field(() => UserInfoType) // ✅ CAMBIAR AQUÍ
   client: UserInfoType;
 
-  @Field(() => UserInfoType, { nullable: true })
+  @Field(() => UserInfoType, { nullable: true }) // ✅ Y AQUÍ
   provider?: UserInfoType;
 
   @Field(() => [String], { nullable: 'items' })
