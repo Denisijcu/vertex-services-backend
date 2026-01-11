@@ -38,22 +38,17 @@ import { PaymentModule } from './payment/payment.module';
       envFilePath: '.env',
     }),
 
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      sortSchema: true,
-      playground: process.env.NODE_ENV !== 'production',
-      introspection: process.env.NODE_ENV !== 'production',
-      context: ({ req, res }) => ({ req, res }),
-      formatError: (error) => {
-        console.error('GraphQL Error:', error);
-        return {
-          message: error.message,
-          code: error.extensions?.code,
-          path: error.path,
-        };
-      },
-    }),
+   GraphQLModule.forRoot<ApolloDriverConfig>({
+  driver: ApolloDriver,
+  autoSchemaFile: 'schema.gql',
+  introspection: false,
+  // ✅ AGREGAR ESTO:
+  csrfPrevention: false, // Deshabilitar CSRF en Render
+  // O si quieres mantener seguridad:
+  // csrfPrevention: true,
+  playground: false,
+  context: ({ req }) => ({ req }),
+}),
 
     MongooseModule.forRoot(
       process.env.MONGODB_URI || 'mongodb://localhost:27017/vertex-coders-db',
