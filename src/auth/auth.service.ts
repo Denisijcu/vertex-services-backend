@@ -89,40 +89,26 @@ export class AuthService {
   // ============================================
   // 2. LOGIN (SOPORTA AMBOS: bcrypt y post-quantum)
   // ============================================
-<<<<<<< HEAD
 // ============================================
   // 2. LOGIN (SOPORTA AMBOS: bcrypt y post-quantum)
   // ============================================
   async login(email: string, password: string, twoFactorCode?: string) {
-=======
- async login(email: string, password: string, twoFactorCode?: string) {
-  try {
->>>>>>> 9206256161f977d2177b8629c5d075496b92d738
     const user = await this.userModel.findOne({ email: email.toLowerCase() });
 
     if (!user) {
       throw new BadRequestException('Credenciales inválidas');
     }
 
-    // 🔐 VERIFICACIÓN DE CONTRASEÑA
+    // 🔐 VERIFICAR: Si tiene salt, usa post-quantum. Si no, usa bcrypt (compatibilidad)
     let isPasswordValid = false;
-<<<<<<< HEAD
 
     if (user.passwordSalt) {
       try {
-=======
-    
-    try {
-      if (user.passwordSalt) {
-        // Usuario post-quantum
-        console.log('🔐 Verifying post-quantum password...');
->>>>>>> 9206256161f977d2177b8629c5d075496b92d738
         isPasswordValid = this.postQuantumCrypto.verifyPassword(
           password,
           user.password,
           user.passwordSalt
         );
-<<<<<<< HEAD
       } catch (error) {
         console.error('❌ Verify error:', error);
         isPasswordValid = false;
@@ -130,18 +116,6 @@ export class AuthService {
     } else {
       // Usuario legacy (bcrypt)
       isPasswordValid = await bcrypt.compare(password, user.password);
-=======
-        console.log('✅ Post-quantum verify result:', isPasswordValid);
-      } else {
-        // Usuario legacy (bcrypt)
-        console.log('🔐 Verifying legacy bcrypt password...');
-        isPasswordValid = await bcrypt.compare(password, user.password);
-        console.log('✅ Bcrypt verify result:', isPasswordValid);
-      }
-    } catch (verifyError) {
-      console.error('❌ Password verification error:', verifyError);
-      throw new UnauthorizedException('Error verifying password');
->>>>>>> 9206256161f977d2177b8629c5d075496b92d738
     }
 
     if (!isPasswordValid) {
@@ -180,44 +154,27 @@ export class AuthService {
     await user.save();
 
     // Crear payload del token
-<<<<<<< HEAD
     const payload = {
       email: user.email,
       sub: user._id,
-=======
-    const payload = { 
-      email: user.email, 
-      sub: user._id.toString(), 
->>>>>>> 9206256161f977d2177b8629c5d075496b92d738
       name: user.name,
       role: user.role,
       quantumSafe: user.passwordSalt ? true : false
     };
-<<<<<<< HEAD
-=======
-    
-    const accessToken = this.jwtService.sign(payload);
-
-    console.log('✅ Login successful for:', email);
->>>>>>> 9206256161f977d2177b8629c5d075496b92d738
 
     return {
-      access_token: accessToken,
+      access_token: this.jwtService.sign(payload),
       user: {
-        _id: user._id.toString(),
+        _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        avatar: user.avatar || null,
+        avatar: user.avatar,
         emailVerified: user.emailVerified
       }
     };
-
-  } catch (error) {
-    console.error('❌ Login error:', error.message);
-    throw error;
   }
-}
+
   // ============================================
   // 3. VERIFICAR EMAIL (SIN CAMBIOS)
   // ============================================
