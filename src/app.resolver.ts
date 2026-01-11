@@ -1,6 +1,7 @@
 import {
   Resolver,
   Query,
+  Context,
   Mutation,
   Args,
   Float,
@@ -18,7 +19,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
-
+//import { Resolver, Query, Context, Mutation, Args, ID, GqlExecutionContext } from '@nestjs/graphql';
 
 // SCHEMAS Y SEGURIDAD
 import { Job, JobDocument, JobStatus } from './job.schema';
@@ -34,7 +35,7 @@ import { GeneralStatsType } from './general-stats-type';
    ========================================================================== */
 export const CurrentUser = createParamDecorator(
   (_: unknown, context: ExecutionContext) => {
-    const ctx = GqlContext.create(context); // ✅ CAMBIAR AQUÍ
+    const ctx = GqlExecutionContext.create(context);
     return ctx.getContext().req.user;
   },
 );
