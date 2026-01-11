@@ -118,6 +118,7 @@ export class JobResolver {
         return updatedJob;
     }
 
+<<<<<<< HEAD
     @Query(() => [Job])
     @UseGuards(GqlAuthGuard)
     async myJobs(@CurrentUser() user: any) {
@@ -129,6 +130,15 @@ export class JobResolver {
             return [];
         }
     }
+=======
+   @Query(() => [Job])
+@UseGuards(GqlAuthGuard)
+async myJobs(@CurrentUser() user: any) {
+  return this.jobService.findMyJobs(user._id);
+}
+
+    // En job.resolver.ts
+>>>>>>> 9206256161f977d2177b8629c5d075496b92d738
     @Query(() => [Job])
     @UseGuards(GqlAuthGuard)
     async getMyClientJobs(@CurrentUser() user: any) {

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { 
   Resolver, 
   Query, 
@@ -8,9 +9,28 @@ import {
   Field, 
   ID, 
   InputType
+=======
+import {
+  Resolver,
+  Query,
+  Context,
+  Mutation,
+  Args,
+  Float,
+  InputType,
+  Field,
+  GqlExecutionContext
+>>>>>>> 9206256161f977d2177b8629c5d075496b92d738
 } from '@nestjs/graphql';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+<<<<<<< HEAD
+=======
+
+//import { Resolver, Query, Context, Mutation, Args, ID, GqlExecutionContext } from '@nestjs/graphql';
+
+// SCHEMAS Y SEGURIDAD
+>>>>>>> 9206256161f977d2177b8629c5d075496b92d738
 import { Job, JobDocument, JobStatus } from './job.schema';
 import { User, UserDocument } from './user.schema';
 import { 
@@ -26,11 +46,17 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 import { GqlAuthGuard } from './auth/graphql-auth.guard';
 
 
+<<<<<<< HEAD
 
 
 // ============================================
 // DECORADOR PERSONALIZADO PARA USUARIO ACTUAL
 // ============================================
+=======
+/* ==========================================================================
+   CURRENT USER DECORATOR (Corregido)
+   ========================================================================== */
+>>>>>>> 9206256161f977d2177b8629c5d075496b92d738
 export const CurrentUser = createParamDecorator(
   (data: unknown, context: ExecutionContext) => {
     const ctx = GqlExecutionContext.create(context);
@@ -38,6 +64,7 @@ export const CurrentUser = createParamDecorator(
   },
 );
 
+<<<<<<< HEAD
 // ============================================
 // TIPOS GRAPHQL - OBJECTS
 // ============================================
@@ -210,6 +237,15 @@ class JobType {
 // ============================================
 // TIPOS GRAPHQL - INPUTS
 // ============================================
+=======
+
+
+
+
+/* ==========================================================================
+   GRAPHQL INPUT TYPES (Inputs locales para el Resolver)
+   ========================================================================== */
+>>>>>>> 9206256161f977d2177b8629c5d075496b92d738
 
 @InputType()
 class CreateJobInput {
