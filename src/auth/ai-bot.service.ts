@@ -145,7 +145,9 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
       if (!assistantMessage.tool_calls?.length) {
         return {
           message: assistantMessage.content || 'Entendido, ¿en qué más te ayudo?',
-          functionCalled: null,
+          functionCalled: [], // 👈 Cambia null por un array vacío
+          functionResult: "",  // 👈 Añade esto para cumplir el Schema
+          timestamp: new Date().toISOString(), // 👈 ¡Faltaba esto!
         };
       }
 
@@ -208,7 +210,8 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
       return {
         message: finalContent || 'Listo, ¿algo más en lo que pueda ayudarte?',
         functionCalled: toolResults.map((t) => t.name),
-        functionResult: toolResults.map((t) => JSON.parse(t.content)),
+        functionResult: JSON.stringify(toolResults.map((t) => JSON.parse(t.content))), // 👈 Conviértelo a string
+        timestamp: new Date().toISOString(), // 👈 ¡Obligatorio!
       };
 
     } catch (error) {
@@ -425,7 +428,7 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
   private async searchProviders(
     categoryInput: string,
     userId: string,
-   // keyword?: string,
+    // keyword?: string,
     limit = 5
   ) {
     this.logger.log(`🔍 [searchProviders] Buscando para: "${categoryInput}"`);
