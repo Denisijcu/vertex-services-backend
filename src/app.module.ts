@@ -39,24 +39,23 @@ import { PaymentModule } from './payment/payment.module';
     }),
 
     GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      csrfPrevention: false,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      sortSchema: true,
-      playground: true,      // 👈 Forzamos a TRUE para ver la interfaz en Render
-      introspection: true,
-      playground: process.env.NODE_ENV !== 'production',
-      introspection: process.env.NODE_ENV !== 'production',
-      context: ({ req, res }: { req: any; res: any }) => ({ req, res }),
-      formatError: (error) => {
-        console.error('GraphQL Error:', error);
-        return {
-          message: error.message,
-          code: error.extensions?.code,
-          path: error.path,
-        };
-      },
-    }),
+  driver: ApolloDriver,
+  csrfPrevention: false, // Permite peticiones sin headers especiales
+  autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+  sortSchema: true,
+  playground: true,      // Forzamos visualización del playground en Render
+  introspection: true,   // Forzamos lectura del esquema desde fuera
+  context: ({ req, res }: { req: any; res: any }) => ({ req, res }),
+  formatError: (error) => {
+    // Esto te ayudará a debuguear errores en la consola de Render
+    console.error('❌ GraphQL Error:', error);
+    return {
+      message: error.message,
+      code: error.extensions?.code,
+      path: error.path,
+    };
+  },
+}),
 
     MongooseModule.forRoot(
       process.env.MONGODB_URI || 'mongodb://localhost:27017/vertex-coders-db',
