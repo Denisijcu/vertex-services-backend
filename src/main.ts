@@ -13,14 +13,22 @@ async function bootstrap() {
   app.use(express.urlencoded({ limit: '200mb', extended: true }));
 
   // 2. CORS CON HEADERS APOLLO
-  app.enableCors({
+ app.enableCors({
     origin: [
       'http://localhost:4200',
       'https://vertexservicespro.netlify.app',
+      'https://vertexservices.store',           // 👈 Agrégalo de una vez para mañana
+      /\.netlify\.app$/,                        // 👈 Permite cualquier subdominio de Netlify
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'apollo-require-preflight'],
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'apollo-require-preflight',
+      'x-apollo-operation-name',
+      'apollo-federation-include-trace'
+    ],
   });
 
 
