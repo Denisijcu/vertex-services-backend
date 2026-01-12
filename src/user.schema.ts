@@ -98,7 +98,7 @@ export class SecuritySettings {
 // ============================================
 // USER SCHEMA
 // ============================================
-@ObjectType()
+@ObjectType('UserSchemaType')
 @Schema({ timestamps: true })
 export class User {
   @Field(() => ID)
