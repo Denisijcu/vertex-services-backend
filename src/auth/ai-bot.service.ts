@@ -215,10 +215,12 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
       };
 
     } catch (error) {
-      console.error('❌ Error en VertexBot:', error);
+      this.logger.error('❌ Error en VertexBot:', error);
       return {
-        message: 'Tuve un problema conectándome con mi cerebro local. Intenta de nuevo en unos segundos o verifica que LM Studio esté corriendo.',
-        error: true,
+        message: 'Tuve un problema conectándome con mi cerebro. Intenta de nuevo.',
+        functionCalled: [],
+        functionResult: "",
+        timestamp: new Date().toISOString(), // 👈 Esto evitará el error de 'getType'
       };
     }
   }
