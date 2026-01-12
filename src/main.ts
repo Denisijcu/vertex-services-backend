@@ -14,11 +14,15 @@ async function bootstrap() {
 
   // 2. CORS CON HEADERS APOLLO
   app.enableCors({
-    origin: 'http://localhost:4200',
+    origin: [
+      'http://localhost:4200',
+      'https://vertexservicespro.netlify.app',
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'apollo-require-preflight', 'x-apollo-operation-name']
+    allowedHeaders: ['Content-Type', 'Authorization', 'apollo-require-preflight'],
   });
+
 
   // Raw body para webhooks de Stripe
   app.use('/webhooks/stripe', json({
