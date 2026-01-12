@@ -29,12 +29,13 @@ import { GqlAuthGuard } from './auth/graphql-auth.guard';
 
 
 // ============================================
-// DECORADOR PERSONALIZADO PARA USUARIO ACTUAL
+// DECORADOR PERSONALIZADO PARA USUARIO ACTUAL (LIMPIO)
 // ============================================
 export const CurrentUser = createParamDecorator(
-  (context: ExecutionContext) => {
+  (_: unknown, context: ExecutionContext) => { // 👈 'data' es necesario aunque no se use
     const ctx = GqlExecutionContext.create(context);
-    return ctx.getContext().req.user;
+    const request = ctx.getContext().req;
+    return request.user; // Retorna solo el usuario inyectado por el GqlAuthGuard
   },
 );
 
