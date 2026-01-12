@@ -43,6 +43,8 @@ import { PaymentModule } from './payment/payment.module';
       csrfPrevention: false,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
+      playground: true,      // 👈 Forzamos a TRUE para ver la interfaz en Render
+      introspection: true,
       playground: process.env.NODE_ENV !== 'production',
       introspection: process.env.NODE_ENV !== 'production',
       context: ({ req, res }: { req: any; res: any }) => ({ req, res }),
