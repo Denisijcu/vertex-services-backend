@@ -25,13 +25,7 @@ import {
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { GqlAuthGuard } from './auth/graphql-auth.guard';
 
-//import { UserType } from './graphql.types';
-//import { ServiceOfferedType } from './graphql.types';
 
-<<<<<<< HEAD
-=======
-import { StatsType, ServiceOfferedType, UserProfileType, JobType } from './graphql.types';
->>>>>>> b5ca08a6a880c0645246c9c0422827494c72e452
 
 
 // ============================================
@@ -48,12 +42,170 @@ export const CurrentUser = createParamDecorator(
 // TIPOS GRAPHQL - OBJECTS
 // ============================================
 
+@ObjectType()
+class UserType {
+  @Field(() => ID)
+  _id: string;
 
+  @Field()
+  name: string;
 
+  @Field()
+  email: string;
 
+  @Field({ nullable: true })
+  avatar?: string;
 
+  @Field({ nullable: true })
+  bio?: string;
 
+  @Field({ nullable: true })
+  location?: string;
+}
 
+@ObjectType()
+class ServiceOfferedType {
+  @Field()
+  category: string;
+
+  @Field()
+  title: string;
+
+  @Field()
+  description: string;
+
+  @Field(() => Float)
+  pricePerHour: number;
+
+  @Field()
+  isActive: boolean;
+}
+
+@ObjectType()
+class SocialLinksType {
+  @Field({ nullable: true })
+  linkedin?: string;
+
+  @Field({ nullable: true })
+  twitter?: string;
+
+  @Field({ nullable: true })
+  instagram?: string;
+
+  @Field({ nullable: true })
+  github?: string;
+
+  @Field({ nullable: true })
+  facebook?: string;
+}
+
+@ObjectType()
+class StatsType {
+  @Field(() => Float)
+  jobsCompleted: number;
+
+  @Field(() => Float)
+  jobsReceived: number;
+
+  @Field(() => Float)
+  totalEarned: number;
+
+  @Field(() => Float)
+  totalSpent: number;
+
+  @Field(() => Float)
+  averageRating: number;
+
+  @Field(() => Float)
+  totalReviews: number;
+}
+
+@ObjectType()
+class UserProfileType {
+  @Field(() => ID)
+  _id: string;
+
+  @Field()
+  name: string;
+
+  @Field()
+  email: string;
+
+  @Field({ nullable: true })
+  bio?: string;
+
+  @Field({ nullable: true })
+  phone?: string;
+
+  @Field({ nullable: true })
+  location?: string;
+
+  @Field()
+  role: string;
+
+  @Field({ nullable: true })
+  avatar?: string;
+
+  @Field(() => [String], { nullable: true })
+  gallery?: string[];
+
+  @Field(() => [ServiceOfferedType], { nullable: true })
+  servicesOffered?: ServiceOfferedType[];
+
+  @Field(() => SocialLinksType, { nullable: true })
+  socialLinks?: SocialLinksType;
+
+  @Field(() => StatsType, { nullable: true })
+  stats?: StatsType;
+
+  @Field()
+  emailVerified: boolean;
+
+  @Field()
+  isActive: boolean;
+
+  @Field({ nullable: true })
+  lastLogin?: string;
+}
+
+@ObjectType()
+class JobType {
+  @Field(() => ID)
+  _id: string;
+
+  @Field()
+  title: string;
+
+  @Field()
+  description: string;
+
+  @Field(() => Float)
+  price: number;
+
+  @Field()
+  location: string;
+
+  @Field()
+  category: string;
+
+  @Field()
+  status: string;
+
+  @Field(() => UserType, { nullable: true })
+  client?: UserType;
+
+  @Field(() => UserType, { nullable: true })
+  provider?: UserType;
+
+  @Field()
+  createdAt: string;
+
+  @Field({ nullable: true })
+  acceptedAt?: string;
+
+  @Field({ nullable: true })
+  completedAt?: string;
+}
 
 // ============================================
 // TIPOS GRAPHQL - INPUTS
@@ -110,7 +262,23 @@ class ServiceInput {
   pricePerHour: number;
 }
 
+@InputType()
+class SocialLinksInput {
+  @Field({ nullable: true })
+  linkedin?: string;
 
+  @Field({ nullable: true })
+  twitter?: string;
+
+  @Field({ nullable: true })
+  instagram?: string;
+
+  @Field({ nullable: true })
+  github?: string;
+
+  @Field({ nullable: true })
+  facebook?: string;
+}
 
 
 // ============================================
@@ -446,7 +614,24 @@ export class AppResolver {
     return updatedUser;
   }
 
+  @Mutation(() => UserProfileType, { description: 'Actualizar redes sociales' })
+  @UseGuards(GqlAuthGuard)
+  async updateSocialLinks(
+    @CurrentUser() user: any,
+    @Args('input') input: SocialLinksInput
+  ) {
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      user._id,
+      { $set: { socialLinks: input } },
+      { new: true }
+    ).select('-password');
 
+    if (!updatedUser) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    return updatedUser;
+  }
 
   @Mutation(() => UserProfileType, { description: 'Agregar imagen a galería' })
   @UseGuards(GqlAuthGuard)
