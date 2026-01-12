@@ -5,14 +5,6 @@ import { User, UserDocument, UserRole } from '../user.schema';
 import { PostQuantumCryptoService } from '../crypto/post-quantum-crypto.service'; // ✅ AGREGAR
 import { isValidObjectId } from 'mongoose';
 
-const defaultStats = {
-  jobsCompleted: 0,
-  jobsReceived: 0,
-  totalEarned: 0,
-  totalSpent: 0,
-  averageRating: 5.0,
-  totalReviews: 0
-};
 
 @Injectable()
 export class UserService {

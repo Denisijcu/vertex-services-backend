@@ -57,6 +57,18 @@ export class UserInfo {
   @Field({ nullable: true })
   @Prop()
   avatar?: string;
+
+  @Field({ nullable: true })
+  @Prop()
+  bio?: string;
+
+  @Field({ nullable: true })
+  @Prop()
+  provider?:string;
+
+  @Field({ nullable: true })
+  @Prop()
+  client?:string;
 }
 
 

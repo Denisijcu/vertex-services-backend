@@ -5,7 +5,7 @@ import { Message, MessageDocument } from './message.schema';
 import { ChatRoom, ChatRoomDocument } from './chat-room.schema';
 import { Job, JobDocument } from './job.schema';
 import { User, UserDocument } from './user.schema';
-import { UploadService } from './upload.service';
+//import { UploadService } from './upload.service';
 
 @Injectable()
 export class ChatService {
@@ -14,7 +14,7 @@ export class ChatService {
     @InjectModel(ChatRoom.name) private chatRoomModel: Model<ChatRoomDocument>,
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private uploadService: UploadService,
+  
   ) { }
 
   /**

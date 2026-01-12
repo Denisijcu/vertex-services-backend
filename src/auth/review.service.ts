@@ -68,8 +68,9 @@ export class ReviewService {
         createdAt: new Date()
       };
 
+      let providerId = job.provider?._id.toString() || '';
       // Actualizar stats del provider
-      await this.updateProviderStats(job.provider._id.toString(), rating);
+      await this.updateProviderStats(providerId, rating);
 
     } else {
       if (!isProvider) {
@@ -187,7 +188,7 @@ export class ReviewService {
     for (const job of jobs) {
       if (type === 'RECEIVED') {
         // Si el usuario es provider y tiene review
-        if (job.provider._id.toString() === userId && job.providerReview) {
+        if (job.provider?._id.toString() === userId && job.providerReview) {
           reviews.push({
             jobId: job._id,
             jobTitle: job.title,
@@ -211,7 +212,7 @@ export class ReviewService {
             jobId: job._id,
             jobTitle: job.title,
             review: job.providerReview,
-            reviewedUser: job.provider.name
+            reviewedUser: job.provider
           });
         }
         if (job.clientReview?.reviewerId.toString() === userId) {
@@ -249,7 +250,7 @@ export class ReviewService {
     const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
     jobs.forEach(job => {
-      if (job.provider._id.toString() === userId && job.providerReview) {
+      if (job.provider?._id?.toString() === userId && job.providerReview) {
         const rating = Math.floor(job.providerReview.rating);
         ratingDistribution[rating as keyof typeof ratingDistribution]++;
       }

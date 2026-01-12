@@ -2,6 +2,7 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { PulseService } from './pulse.service';
 import { PulsePost } from './pulse.schema';
+import { NotFoundException } from '@nestjs/common';
 
 @Resolver(() => PulsePost)
 export class PulseResolver {
@@ -58,6 +59,7 @@ export class PulseResolver {
       avatar,
       createdAt: new Date()
     });
+    if (!post) throw new NotFoundException('Post no encontrado');
     return post.toObject({ virtuals: true });
   }
 

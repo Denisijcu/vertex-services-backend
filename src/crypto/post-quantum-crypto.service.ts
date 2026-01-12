@@ -1,5 +1,5 @@
 
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 
 /**
@@ -102,10 +102,10 @@ export class PostQuantumCryptoService {
     encryptedData: string,
     encryptedAesKey: string,
     iv: string,
-    privateKeyKyber: string
+   // privateKeyKyber: string
   ): string {
     // 1. Desencriptar clave AES con Kyber
-    const aesKey = Buffer.from(this.simulateKyberDecrypt(encryptedAesKey, privateKeyKyber), 'hex');
+    const aesKey = Buffer.from(this.simulateKyberDecrypt(encryptedAesKey), 'hex');
 
     // 2. Extraer auth tag (últimos 32 caracteres = 16 bytes en hex)
     const authTag = Buffer.from(encryptedData.slice(-32), 'hex');
@@ -141,7 +141,7 @@ export class PostQuantumCryptoService {
     return hash;
   }
 
-  private simulateKyberDecrypt(ciphertext: string, privateKey: string): string {
+  private simulateKyberDecrypt(ciphertext: string): string {
     // Simulación: en producción usar liboqs
     return ciphertext; // En real, desencriptaría con privateKey
   }
@@ -246,9 +246,9 @@ export class PostQuantumCryptoService {
     encryptedToken: string,
     iv: string,
     encryptedKey: string,
-    privateKeyKyber: string
+   // privateKeyKyber: string
   ): string {
-    return this.hybridDecrypt(encryptedToken, encryptedKey, iv, privateKeyKyber);
+    return this.hybridDecrypt(encryptedToken, encryptedKey, iv);
   }
 
   // ============================================

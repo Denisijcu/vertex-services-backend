@@ -9,7 +9,7 @@ import { PostQuantumCryptoService } from './post-quantum-crypto.service';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private userService: UserService,
-    private postQuantumCrypto: PostQuantumCryptoService
+   // private postQuantumCrypto: PostQuantumCryptoService
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([

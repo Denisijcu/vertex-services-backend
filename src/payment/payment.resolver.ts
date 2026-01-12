@@ -67,10 +67,10 @@ export class PaymentResolver {
   @UseGuards(GqlAuthGuard)
   async releasePayment(
     @Args('jobId', { type: () => ID }) jobId: string,
-    @Context() context: any
+   // @Context() context: any
   ): Promise<Transaction> {
-    const userId = context.req.user._id;
-    return this.paymentService.releasePayment(jobId, userId);
+    //const userId = context.req.user._id;
+    return this.paymentService.releasePayment(jobId);
   }
 
   @Mutation(() => Transaction)

@@ -8,17 +8,6 @@ import { CurrentUser } from './app.resolver';
 // TIPOS GRAPHQL
 // ============================================
 
-@ObjectType()
-class BotMessage {
-  @Field()
-  role: string; // 'user' | 'assistant'
-
-  @Field()
-  content: string;
-
-  @Field()
-  timestamp: string;
-}
 
 @ObjectType()
 class BotResponse {

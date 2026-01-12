@@ -35,7 +35,7 @@ export class CategoryService implements OnModuleInit {
       try {
         await this.categoryModel.insertMany(categoriesToCreate);
         console.log(`✅ Vertex Seed: ${categoriesToCreate.length} categorías creadas.`);
-      } catch (error) {
+      } catch (error:any) {
         console.error('❌ Vertex Seed Error:', error.message);
       }
     } else {

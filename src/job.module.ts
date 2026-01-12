@@ -6,15 +6,14 @@ import { Job, JobSchema } from './job.schema';
 import { Notification, NotificationSchema } from './notification.schema';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user.module';
-import { NotificationService } from './auth/notification.service';
-import { ChatModule } from './chat.module';
+import { NotificationService } from './auth/notification.service'; // 👈 Asegúrate de importar el SERVICIO aquí
+import { ChatModule } from './chat.module'
 
 @Module({
   imports: [
     AuthModule, 
     UserModule, 
     ChatModule,
-    // Definimos los modelos para que este módulo los use
     MongooseModule.forFeature([
       { name: Job.name, schema: JobSchema },
       { name: Notification.name, schema: NotificationSchema },
@@ -23,12 +22,8 @@ import { ChatModule } from './chat.module';
   providers: [
     JobResolver, 
     JobService,
-    NotificationService,
+    NotificationService, // 👈 REGÍSTRALO AQUÍ como proveedor
   ],
-  exports: [
-    JobService, 
-    NotificationService, 
-    MongooseModule // <--- Esto permite que el AppResolver vea el JobModel
-  ], 
+  exports: [JobService, NotificationService], // Expórtalo por si lo usas en otro lado
 })
 export class JobModule {}

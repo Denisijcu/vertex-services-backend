@@ -3,14 +3,14 @@ import { Model } from 'mongoose';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Job, JobDocument } from '../job.schema';
 import { UserService } from './user.service';
-import { NotificationService } from './notification.service'; // 👈 1. IMPORTANTE: Agrega este import
+//import { NotificationService } from './notification.service'; // 👈 1. IMPORTANTE: Agrega este import
 
 @Injectable()
 export class JobService {
   constructor(
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
     private userService: UserService,
-    private notificationService: NotificationService, // 👈 2. Inyectamos el servicio aquí
+    //  private notificationService: NotificationService, // 👈 2. Inyectamos el servicio aquí
   ) { }
 
   // 1. Crear un nuevo contrato de trabajo
@@ -40,7 +40,7 @@ export class JobService {
 
   // 4. Buscar un trabajo específico
   async findOne(id: string): Promise<JobDocument> {
-    return await this.jobModel.findById(id).exec();
+    return (await this.jobModel.findById(id).exec()) as JobDocument;
   }
 
   // 5. Actualizar estado (ACEPTAR O COMPLETAR TRABAJO)
@@ -62,7 +62,7 @@ export class JobService {
     // ✅ Cuando acepta el job (OPEN → PENDING_PAYMENT)
     if (status === 'PENDING_PAYMENT' && oldStatus === 'OPEN') {
       updateData.acceptedAt = new Date();
-     // console.log(`✅ Provider accepted job: ${job.title}`);
+      console.log(`✅ Provider accepted job: ${job.title}`);
     }
 
     // ✅ Cuando completa el job
@@ -70,7 +70,7 @@ export class JobService {
       updateData.completedAt = new Date();
 
       if (job.provider && job.provider._id) {
-      //  console.log(`💰 Job completed: ${job.title} - $${job.price}`);
+        console.log(`💰 Job completed: ${job.title} - $${job.price}`);
         await this.userService.incrementUserEarnings(
           job.provider._id.toString(),
           job.price
@@ -78,21 +78,22 @@ export class JobService {
       }
     }
 
-    return await this.jobModel.findByIdAndUpdate(
+    // ✅ Usamos "as JobDocument" al final para asegurar el tipo y evitar el error TS2322
+    return (await this.jobModel.findByIdAndUpdate(
       id,
       { $set: updateData },
       { new: true }
-    ).exec();
+    ).exec()) as JobDocument;
   }
 
-  async findMyJobs(userId: string): Promise<JobDocument[]> {
-  return await this.jobModel.find({
-    $or: [
-      { 'client._id': userId },
-      { 'provider._id': userId }
-    ]
-  }).sort({ createdAt: -1 }).exec(); // ✅ AGREGAR .exec()
-}
+  findMyJobs(userId: string) {
+    return this.jobModel.find({
+      $or: [
+        { 'client._id': userId },
+        { 'provider._id': userId }
+      ]
+    }).sort({ createdAt: -1 }); // 👈 Ordenados por el más reciente
+  }
 
   async acceptJob(jobId: string, userId: string) {
     return this.jobModel.findByIdAndUpdate(

@@ -44,7 +44,7 @@ export class ChatResolver {
   @UseGuards(GqlAuthGuard)
   async getChatMessages(
     @Args('jobId', { type: () => ID }) jobId: string, // 👈 AGREGAR { type: () => ID }
-    @Context() context: any
+
   ): Promise<Message[]> {
     return this.chatService.getChatMessages(jobId);
   }

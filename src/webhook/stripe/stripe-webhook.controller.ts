@@ -37,7 +37,7 @@ export class StripeWebhookController {
 
     try {
       event = this.stripe.webhooks.constructEvent(
-        req.rawBody,
+        req.rawBody!,
         signature,
         this.webhookSecret,
       );
@@ -96,7 +96,7 @@ export class StripeWebhookController {
       // Llamamos al método que ya existe en tu servicio para marcar como PAID y mover el dinero en Mongo
       await this.paymentService.confirmPayment(paymentIntent.id);
       this.logger.log(`📊 MongoDB updated for payment ${paymentIntent.id}`);
-    } catch (error) {
+    } catch (error:any) {
       this.logger.error(`❌ Error updating DB for payment ${paymentIntent.id}: ${error.message}`);
     }
   }

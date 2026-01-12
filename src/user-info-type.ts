@@ -1,4 +1,4 @@
-import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
+import { ObjectType, Field } from '@nestjs/graphql';
 import { UserRole } from './user.schema';
 
 @ObjectType()

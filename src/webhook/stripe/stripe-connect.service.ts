@@ -7,7 +7,7 @@ export class StripeConnectService {
   private stripe: Stripe;
 
  constructor() {
-  this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY); // 👈 SIN apiVersion
+  this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY!); // 👈 SIN apiVersion
 }
   /**
    * Crear Express Connected Account para un provider

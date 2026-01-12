@@ -8,7 +8,7 @@ import { Settings } from '../settings.schema';
 import { UserService } from './user.service';
 import { CategoryService } from '../category.service';
 import { JobService } from './job.service';
-import { PaymentService } from '../payment/payment.service';
+
 import { NotificationService } from './notification.service';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class AIBotService {
     private readonly userService: UserService,
     private readonly categoryService: CategoryService,
     private readonly jobService: JobService,
-    private readonly paymentService: PaymentService,
+
     private readonly notificationService: NotificationService
   ) { }
 
@@ -161,7 +161,6 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
           args = JSON.parse(toolCall.function.arguments || '{}');
         } catch (parseError) {
           console.error(`❌ ERROR PARSEANDO ARGUMENTOS DE ${fnName}:`, parseError);
-          this.logger.error(`Error parsing arguments for ${fnName}: ${parseError.message}`);
           continue;
         }
 
@@ -175,12 +174,11 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
           });
         } catch (execError) {
           console.error(`❌ ERROR EJECUTANDO LA FUNCIÓN ${fnName}:`, execError);
-          this.logger.error(`Error executing ${fnName}: ${execError.message}`);
           toolResults.push({
             tool_call_id: toolCall.id,
             role: 'tool',
             name: fnName,
-            content: JSON.stringify({ error: `Error ejecutando ${fnName}: ${execError.message}` }),
+            content: JSON.stringify({ error: `Error ejecutando ${fnName}: ` }),
           });
         }
       }
@@ -214,8 +212,7 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
       };
 
     } catch (error) {
-      console.error('❌ Error en VertexBot:', error.message);
-      this.logger.error(`VertexBot error: ${error.message}`, error.stack);
+      console.error('❌ Error en VertexBot:', error);
       return {
         message: 'Tuve un problema conectándome con mi cerebro local. Intenta de nuevo en unos segundos o verifica que LM Studio esté corriendo.',
         error: true,
@@ -338,7 +335,7 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
         };
 
       case 'search_providers':
-        return this.searchProviders(args.category, userId, args.keyword, args.limit || 5);
+        return this.searchProviders(args.category, userId, args.keyword,);
 
       case 'get_active_jobs':
         const jobStatus = args && args.status ? args.status : undefined;
@@ -428,7 +425,7 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
   private async searchProviders(
     categoryInput: string,
     userId: string,
-    keyword?: string,
+   // keyword?: string,
     limit = 5
   ) {
     this.logger.log(`🔍 [searchProviders] Buscando para: "${categoryInput}"`);
@@ -543,7 +540,6 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
         context: status ? `Mostrando trabajos con estado ${status}` : 'Mostrando trabajos recientes'
       };
     } catch (error) {
-      this.logger.error(`❌ Error en getUserJobs: ${error.message}`);
       return { error: 'No pude recuperar tus trabajos en este momento.' };
     }
   }

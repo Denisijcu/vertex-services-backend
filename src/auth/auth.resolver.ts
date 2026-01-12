@@ -131,14 +131,7 @@ class UserInfo {
 // RESPUESTAS
 // ============================================
 
-@ObjectType()
-class AuthResponse {
-  @Field()
-  access_token: string;
 
-  @Field(() => UserInfo)
-  user: UserInfo;
-}
 
 @ObjectType()
 class LoginResponse {
@@ -229,25 +222,6 @@ class ForgotPasswordInput {
 }
 
 
-@InputType()
-class SocialLinksInput {
-  @Field({ nullable: true })
-  linkedin?: string;
-
-  @Field({ nullable: true })
-  twitter?: string;
-
-  @Field({ nullable: true })
-  instagram?: string;
-
-  @Field({ nullable: true })
-  github?: string;
-
-  @Field({ nullable: true })
-  facebook?: string;
-}
-
-
 // ============================================
 // RESOLVER
 // ============================================
@@ -259,7 +233,6 @@ export class AuthResolver {
   // ============================================
   // REGISTRO
   // ============================================
-<<<<<<< HEAD
    @Mutation(() => MessageResponse)
   async register(@Args('input') input: RegisterInput) {
     try {
@@ -280,26 +253,6 @@ export class AuthResolver {
       };
     }
   }
-=======
-
-@Mutation(() => MessageResponse)
-async register(@Args('input') input: RegisterInput) {
-  console.log('📝 Register input received:', input);
-  console.log('Email:', input.email);
-  console.log('Password:', input.password);
-  console.log('Name:', input.name);
-  console.log('Role:', input.role);
-  console.log('TermsAccepted:', input.termsAccepted);
-  
-  return this.authService.register(
-    input.email,
-    input.password,
-    input.name,
-    input.role,
-    input.termsAccepted
-  );
-}
->>>>>>> 9206256161f977d2177b8629c5d075496b92d738
 
   // ============================================
   // LOGIN

@@ -112,7 +112,7 @@ export class PaymentService {
 
         // Crear transacción en escrow (proveedor)
         const providerTransaction = new this.transactionModel({
-            userId: job.provider._id,
+            userId: job.provider?._id?.toString(),
             jobId: new Types.ObjectId(jobId),
             type: TransactionType.ESCROW_HOLD,
             amount: job.price,
@@ -124,12 +124,11 @@ export class PaymentService {
 
         await providerTransaction.save();
 
-        // ✅ ARREGLO: Usar getOrCreateWallet para asegurar que existe
-        const providerWallet = await this.getOrCreateWallet(job.provider._id.toString());
+       
 
         // ✅ ARREGLO: Actualizar usando updateOne con $inc
         await this.walletModel.updateOne(
-            { userId: job.provider._id },
+            { userId: job.provider?._id },
             { $inc: { pendingBalance: job.price } }
         );
 
@@ -156,7 +155,7 @@ export class PaymentService {
     /**
      * Liberar pago cuando job se completa
      */
-    async releasePayment(jobId: string, userId: string): Promise<Transaction> {
+    async releasePayment(jobId: string): Promise<Transaction> {
         const job = await this.jobModel.findById(jobId);
         if (!job) throw new NotFoundException('Job not found');
 
@@ -165,7 +164,7 @@ export class PaymentService {
         }
 
         // Obtener provider
-        const provider = await this.userModel.findById(job.provider._id);
+        const provider = await this.userModel.findById(job.provider?._id.toString());
         if (!provider) throw new NotFoundException('Provider not found');
 
         // Calcular comisión de la plataforma
@@ -206,7 +205,7 @@ export class PaymentService {
 
         // Crear transacción de liberación para proveedor
         const releaseTransaction = new this.transactionModel({
-            userId: job.provider._id,
+            userId: job.provider?._id?.toString(),
             jobId: new Types.ObjectId(jobId),
             type: TransactionType.ESCROW_RELEASE,
             amount: providerAmount,
@@ -220,7 +219,7 @@ export class PaymentService {
 
         // Crear transacción de comisión
         const commissionTransaction = new this.transactionModel({
-            userId: job.provider._id,
+            userId: job.provider?._id?.toString(),
             jobId: new Types.ObjectId(jobId),
             type: TransactionType.COMMISSION,
             amount: -commission,
@@ -232,7 +231,7 @@ export class PaymentService {
         await commissionTransaction.save();
 
         // Actualizar wallet del proveedor
-        const wallet = await this.walletModel.findOne({ userId: job.provider._id });
+        const wallet = await this.walletModel.findOne({ userId: job.provider?._id?.toString() });
         if (wallet) {
             wallet.pendingBalance -= job.price;
             wallet.availableBalance += providerAmount;
@@ -304,7 +303,7 @@ export class PaymentService {
             );
 
             return transaction;
-        } catch (error) {
+        } catch (error:any) {
             console.error('❌ Error en retiro:', error);
             throw new BadRequestException(`Stripe Error: ${error.message}`);
         }
@@ -588,7 +587,7 @@ export class PaymentService {
 
                 // Crear transacción de penalización
                 const penaltyTx = new this.transactionModel({
-                    userId: job.provider._id,
+                    userId: job.provider?._id.toString(),
                     jobId: new Types.ObjectId(jobId),
                     type: TransactionType.COMMISSION,
                     amount: -providerPenalty,
@@ -600,7 +599,7 @@ export class PaymentService {
 
                 // Quitar del balance pendiente del provider
                 await this.walletModel.updateOne(
-                    { userId: job.provider._id },
+                    { userId: job.provider?._id.toString() },
                     {
                         $inc: {
                             pendingBalance: -job.price,
@@ -634,7 +633,7 @@ export class PaymentService {
             });
 
             await this.notificationService.create({
-                recipientId: job.provider._id.toString(),
+                recipientId: job.provider?._id.toString(),
                 message: `⚠️ El trabajo "${job.title}" fue cancelado. Reembolso procesado al cliente.`,
                 jobId: new Types.ObjectId(jobId),
                 type: 'JOB_CANCELLED'
@@ -643,7 +642,8 @@ export class PaymentService {
             // 1️⃣1️⃣ ACTUALIZAR STATS DE USUARIOS
             if (job.status === 'IN_PROGRESS') {
                 // Decrementar trabajos del provider
-                await this.userService.updateStats(job.provider._id.toString(), {
+                let providerId  = job.provider?._id.toString() || '';
+                await this.userService.updateStats(providerId, {
                     'stats.jobsReceived': -1
                 });
             }
@@ -661,7 +661,7 @@ export class PaymentService {
                 estimatedArrival: '5-10 días hábiles'
             };
 
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`❌ Error procesando refund: ${error.message}`, error.stack);
 
             // Registrar error en base de datos
@@ -723,7 +723,7 @@ export class PaymentService {
 
         // 3. Creamos la transacción de congelamiento
         const disputeTx = new this.transactionModel({
-            userId: job.provider._id, // Asegúrate de si es job.provider o job.providerId
+            userId: job.provider?._id.toString(), // Asegúrate de si es job.provider o job.providerId
             jobId: job._id,
             type: TransactionType.ESCROW_HOLD,
             amount: -job.price,
@@ -735,7 +735,7 @@ export class PaymentService {
 
         // 4. Bloqueamos el dinero en el Wallet
         await this.walletModel.updateOne(
-            { userId: job.provider._id },
+            { userId: job.provider?._id.toString() },
             { $inc: { availableBalance: -(job.price * 0.9) } }
         );
 
@@ -791,7 +791,7 @@ export class PaymentService {
             this.logger.log(`🔄 Balance synced for user ${userId}: \$${finalAvailable} Avail / \$${finalPending} Pend`);
 
             return { available: finalAvailable, pending: finalPending };
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`❌ Sync Balance Error: ${error.message}`);
             return null;
         }
