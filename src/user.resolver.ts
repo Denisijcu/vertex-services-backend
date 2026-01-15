@@ -50,13 +50,23 @@ export class UserResolver {
     return this.userService.findProviders({ categoryId, search });
   }
 
-  @Mutation(() => User)
+@Mutation(() => User)
   @UseGuards(GqlAuthGuard)
   async updateProfessionalProfile(
     @CurrentUser() user: any,
     @Args('input') input: UpdateProfessionalProfileInput
   ) {
-    return this.userService.updateProfessionalProfile(user._id, input);
+    // 1. Ejecutamos la actualización
+    const updated = await this.userService.updateProfessionalProfile(user._id, input);
+    
+    // 2. 🛡️ PROTECCIÓN: Si el servicio devuelve el objeto viejo o incompleto, 
+    // forzamos una búsqueda fresca para que el Frontend reciba TODO (stats, gallery, etc.)
+    if (!updated) {
+      throw new BadRequestException('No se pudo actualizar el perfil profesional.');
+    }
+
+    // Buscamos el usuario final para asegurar que servicesOffered y stats lleguen bien
+    return this.userService.findOneById(user._id);
   }
 
   @Mutation(() => User)

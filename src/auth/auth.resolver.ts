@@ -1,4 +1,4 @@
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, BadRequestException } from '@nestjs/common';
 import { Args, Field, InputType, Mutation, ObjectType, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../app.resolver';
 import { AuthService } from './auth.service';
@@ -221,6 +221,24 @@ class ForgotPasswordInput {
   email: string;
 }
 
+@ObjectType()
+class BiometricChallengeResponse {
+  @Field()
+  challenge: string;
+
+  @Field(() => [BiometricCredentialDescriptor])
+  allowCredentials: BiometricCredentialDescriptor[];
+}
+
+@ObjectType()
+class BiometricCredentialDescriptor {
+  @Field()
+  id: string;
+
+  @Field()
+  type: string;
+}
+
 
 // ============================================
 // RESOLVER
@@ -351,5 +369,37 @@ export class AuthResolver {
       lastLogin: user.lastLogin?.toISOString(),
       gallery: user.gallery || [],
     };
+  }
+
+
+  // ============================================
+  // BIOMETRÍA: GENERAR DESAFÍO
+  // ============================================
+  @Mutation(() => BiometricChallengeResponse)
+  async getBiometricChallenge(@Args('email') email: string) {
+    try {
+      console.log('🧬 Generando desafío biométrico para:', email);
+      return await this.authService.generateBiometricChallenge(email);
+    } catch (error: any) {
+      console.error('❌ Biometric Challenge Error:', error.message);
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  // ============================================
+  // BIOMETRÍA: VERIFICAR Y LOGUEAR
+  // ============================================
+  @Mutation(() => LoginResponse)
+  async verifyBiometricLogin(
+    @Args('email') email: string,
+    @Args('assertion') assertion: string,
+  ) {
+    try {
+      console.log('🔑 Verificando firma biométrica para:', email);
+      return await this.authService.verifyBiometricSignature(email, assertion);
+    } catch (error: any) {
+      console.error('❌ Biometric Verify Error:', error.message);
+      throw new BadRequestException('Fallo en la verificación de identidad');
+    }
   }
 }

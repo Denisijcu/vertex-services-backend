@@ -29,12 +29,12 @@ import { AuthModule } from '../auth/auth.module';
     ],
     controllers: [StripeWebhookController],
     providers: [
-        PaymentService,
-        PaymentResolver,
-        StripeService,
+        StripeService,         // Primero las herramientas base
+        StripeConnectService,  // Luego el conector de Stripe
         UserService,
-        StripeConnectService,
         NotificationService,
+        PaymentService,        // El servicio principal al final porque depende de los de arriba
+        PaymentResolver,
     ],
     exports: [PaymentService, StripeService]
 })

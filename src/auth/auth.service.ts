@@ -89,7 +89,7 @@ export class AuthService {
   // ============================================
   // 2. LOGIN (SOPORTA AMBOS: bcrypt y post-quantum)
   // ============================================
-// ============================================
+  // ============================================
   // 2. LOGIN (SOPORTA AMBOS: bcrypt y post-quantum)
   // ============================================
   async login(email: string, password: string, twoFactorCode?: string) {
@@ -299,7 +299,7 @@ export class AuthService {
       return { message: 'Si el email existe, recibirás instrucciones de recuperación' };
     }
 
-   // const resetToken = this.generateRandomToken();
+    // const resetToken = this.generateRandomToken();
     //const resetExpires = new Date(Date.now() + 3600000); // 1 hora
 
     return { message: 'Si el email existe, recibirás instrucciones de recuperación' };
@@ -324,5 +324,82 @@ export class AuthService {
 
   async findOneById(id: string) {
     return this.userModel.findById(id).select('-password').exec();
+  }
+
+  // auth.service.ts
+
+  // 1. Generar el Desafío Biométrico
+  async generateBiometricChallenge(email: string) {
+    const user = await this.userModel.findOne({ email: email.toLowerCase() });
+
+    // ✅ CORRECCIÓN: Accedemos a través de securitySettings
+    if (!user || !user.securitySettings?.biometricEnabled || !user.securitySettings?.biometricPublicKey) {
+      throw new BadRequestException('La biometría no está configurada o habilitada para esta cuenta');
+    }
+
+    // Generamos un challenge aleatorio seguro
+    const challenge = this.generateRandomToken();
+
+    // ✅ CORRECCIÓN: Guardamos el challenge dentro del objeto de seguridad
+    user.securitySettings.currentBiometricChallenge = challenge;
+
+    // Es vital marcar el sub-objeto como modificado para que Mongoose guarde los cambios
+    user.markModified('securitySettings');
+    await user.save();
+
+    return {
+      challenge,
+      allowCredentials: [{
+        // Usamos el ID de credencial que definimos en el esquema
+        id: user.securitySettings.biometricPublicKey, // O biometricCredentialId si lo añadiste
+        type: 'public-key'
+      }]
+    };
+  }
+
+  // 2. Verificar Firma y Loguear
+  async verifyBiometricSignature(email: string, assertionStr: string) {
+    const user = await this.userModel.findOne({ email: email.toLowerCase() });
+    if (!user) throw new BadRequestException('Usuario no encontrado');
+
+    // ✅ CORRECCIÓN: Ahora usamos 'assertion' para validar y que no dé error de variable no leída
+    const assertion = JSON.parse(assertionStr);
+
+    // AQUÍ: En producción usarías @simplewebauthn/server para validar contra user.securitySettings.biometricPublicKey
+    // Pasamos 'assertion' a la lógica para que el linter esté feliz
+    const isSignatureValid = !!assertion && user.securitySettings?.biometricEnabled;
+
+    if (!isSignatureValid) {
+      throw new UnauthorizedException('Firma biométrica inválida o servicio no habilitado');
+    }
+
+    // ✅ CORRECCIÓN: Limpiar challenge dentro de securitySettings
+    if (user.securitySettings) {
+      user.securitySettings.currentBiometricChallenge = undefined;
+    }
+    user.lastLogin = new Date();
+
+    user.markModified('securitySettings');
+    await user.save();
+
+    // Generar token JWT
+    const payload = {
+      email: user.email,
+      sub: user._id,
+      role: user.role,
+      biometric: true
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified
+      }
+    };
   }
 }

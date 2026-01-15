@@ -1,9 +1,30 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { UserRole } from './user.schema';
 
+// ============================================
+// STATS DE USUARIO (para perfil)
+// ============================================
+@ObjectType()
+export class UserStatsType {
+  @Field()
+  jobsCompleted: number;
+
+  @Field()
+  totalEarned: number;
+
+  @Field()
+  averageRating: number;
+
+  @Field()
+  totalReviews: number;
+}
+
+// ============================================
+// INFO DE USUARIO
+// ============================================
 @ObjectType()
 export class UserInfoType {
-  @Field()
+  @Field(() => ID)
   _id: string;
 
   @Field()
@@ -31,8 +52,50 @@ export class UserInfoType {
   location?: string;
 
   @Field({ nullable: true })
-  jobsCompleted?: number;
+  stripeAccountComplete?: boolean;
+
+  @Field(() => UserStatsType, { nullable: true })
+  stats?: UserStatsType;
 
   @Field({ nullable: true })
-  totalEarned?: number;
+  createdAt?: string;
+
+  @Field({ nullable: true })
+  lastLogin?: string;
+}
+
+// ============================================
+// STATS GENERALES (para admin)
+// ============================================
+@ObjectType()
+export class GeneralStatsType {
+  @Field()
+  totalUsers: number;
+
+  @Field()
+  totalProviders: number;
+
+  @Field()
+  totalClients: number;
+
+  @Field()
+  activeUsers: number;
+
+  @Field()
+  totalEarnings: number;
+
+  @Field()
+  inEscrow: number;
+
+  @Field()
+  disputesCount: number;
+
+  @Field()
+  pendingPayments: number;
+
+  @Field()
+  completedJobs: number;
+
+  @Field()
+  cancelledJobs: number;
 }

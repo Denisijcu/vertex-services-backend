@@ -57,8 +57,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string }
   ) {
-    client.join(`chat_${data.jobId}`);
-    console.log(`📥 Cliente ${client.id} unido al chat ${data.jobId}`);
+    const roomName = `chat_${data.jobId}`;
+    client.join(roomName);
+
+    // Obtener info de la sala
+    const room = this.server.sockets.adapter.rooms.get(roomName);
+    const clientCount = room ? room.size : 0;
+
+    console.log(`📥 Cliente ${client.id} unido a ${roomName}`);
+    console.log(`👥 Total de clientes en sala: ${clientCount}`);
+
+    // Confirmar al cliente que se unió
+    client.emit('joined_chat', {
+      jobId: data.jobId,
+      roomName,
+      clientCount
+    });
   }
 
   @SubscribeMessage('leave_chat')
@@ -84,12 +98,52 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /**
+ * Emitir nuevo mensaje a los participantes del chat
+ */
+  /**
+   * Emitir nuevo mensaje a los participantes del chat
+   */
+  /**
    * Emitir nuevo mensaje a los participantes del chat
    */
   emitNewMessage(jobId: string, message: any) {
-    // Convertimos a JSON plano para evitar problemas de circularidad o formatos de Mongoose
-    const plainMessage = JSON.parse(JSON.stringify(message));
-    this.server.to(`chat_${jobId}`).emit('new_message', plainMessage);
-    console.log(`🚀 Mensaje emitido a sala chat_${jobId}`);
+    try {
+      // Convertir a JSON plano
+      const plainMessage = JSON.parse(JSON.stringify(message));
+
+      const roomName = `chat_${jobId}`;
+
+      // Obtener cuántos clientes están en la sala
+      const room = this.server.sockets.adapter.rooms.get(roomName);
+      const clientCount = room ? room.size : 0;
+
+      console.log(`🚀 Emitiendo mensaje a sala ${roomName}`);
+      console.log(`👥 Clientes en la sala: ${clientCount}`);
+      console.log(`📦 Mensaje:`, {
+        _id: plainMessage._id,
+        content: plainMessage.content?.substring(0, 50),
+        senderId: plainMessage.senderId
+      });
+
+      // Emitir a toda la sala
+      this.server.to(roomName).emit('new_message', plainMessage);
+
+      console.log(`✅ Mensaje emitido exitosamente`);
+
+    } catch (error) {
+      console.error('❌ Error emitiendo mensaje:', error);
+    }
+  }
+
+
+  @SubscribeMessage('test_connection')
+  handleTestConnection(@ConnectedSocket() client: Socket) {
+    console.log('🧪 Test connection from:', client.id);
+    client.emit('test_response', {
+      status: 'connected',
+      socketId: client.id,
+      timestamp: new Date()
+    });
+    return { status: 'ok' };
   }
 }

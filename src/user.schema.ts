@@ -81,7 +81,17 @@ export class SecuritySettings {
 
   @Field(() => String, { nullable: true })
   @Prop()
-  biometricPublicKey?: string; // Para WebAuthn
+  biometricPublicKey?: string; // Llave pública generada por el móvil
+
+  // 🛡️ FUNDAMENTAL PARA WEBAUTHN:
+  @Prop()
+  biometricCredentialId?: string; // El ID único del hardware de tu móvil
+
+  @Prop({ default: 0 })
+  biometricCounter?: number; // Previene ataques de replicación
+
+  @Prop()
+  currentBiometricChallenge?: string; // El desafío temporal que discutimos
 
   @Field({ nullable: true })
   @Prop()
@@ -98,7 +108,7 @@ export class SecuritySettings {
 // ============================================
 // USER SCHEMA
 // ============================================
-@ObjectType('UserSchemaType')
+@ObjectType()
 @Schema({ timestamps: true })
 export class User {
   @Field(() => ID)

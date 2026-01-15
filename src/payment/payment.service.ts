@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, Logger, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, Injectable, Inject, forwardRef, NotFoundException, Logger, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Job, JobDocument } from '../job.schema';
@@ -22,6 +22,7 @@ export class PaymentService {
         @InjectModel(Job.name) private jobModel: Model<JobDocument>,
         @InjectModel(User.name) private userModel: Model<UserDocument>,
         private stripeService: StripeService,
+        @Inject(forwardRef(() => StripeConnectService)) // 👈 ESTO ES EL ANTÍDOTO AL NULL
         private stripeConnectService: StripeConnectService,
         private userService: UserService,
         private notificationService: NotificationService,
@@ -59,6 +60,11 @@ export class PaymentService {
      * Obtener wallet del usuario
      */
     async getMyWallet(userId: string): Promise<Wallet> {
+        if (!userId) {
+            this.logger.error('❌ Intento de obtener wallet sin userId');
+            throw new BadRequestException('Usuario no identificado');
+        }
+        // Aseguramos que sea un ObjectId válido antes de buscar
         return await this.getOrCreateWallet(userId);
     }
 
@@ -124,7 +130,7 @@ export class PaymentService {
 
         await providerTransaction.save();
 
-       
+
 
         // ✅ ARREGLO: Actualizar usando updateOne con $inc
         await this.walletModel.updateOne(
@@ -303,7 +309,7 @@ export class PaymentService {
             );
 
             return transaction;
-        } catch (error:any) {
+        } catch (error: any) {
             console.error('❌ Error en retiro:', error);
             throw new BadRequestException(`Stripe Error: ${error.message}`);
         }
@@ -398,41 +404,23 @@ export class PaymentService {
     /**
      * Verificar estado de cuenta conectada
      */
-    async checkStripeAccountStatus(userId: string): Promise<{
-        hasAccount: boolean;
-        isComplete: boolean;
-        accountId?: string;
-    }> {
+    async checkStripeAccountStatus(userId: string) {
         const user = await this.userModel.findById(userId);
-
-        // Si no tiene el ID, no tiene cuenta
-        if (!user || !user.stripeConnectedAccountId) {
+        // Cambiamos la lógica: si no hay cuenta, devolvemos un estado limpio, no null
+        if (!user || (!user.stripeConnectedAccountId && !user.stripeAccountId)) {
             return { hasAccount: false, isComplete: false };
         }
 
-        // Consultamos a Stripe la realidad de la cuenta
-        const isComplete = await this.stripeConnectService.isAccountComplete(
-            user.stripeConnectedAccountId,
-        );
+        const accountId = user.stripeConnectedAccountId || user.stripeAccountId;
+        const isComplete = await this.stripeConnectService.isAccountComplete(accountId || '');
 
-        // ✅ CRÍTICO: Actualizamos los dos campos para que el Frontend se limpie
         await this.userModel.updateOne(
             { _id: userId },
-            {
-                $set: {
-                    stripeAccountComplete: isComplete,
-                    stripeAccountId: user.stripeConnectedAccountId // Sincronizamos ambos campos
-                }
-            }
+            { $set: { stripeAccountComplete: isComplete, stripeAccountId: accountId } }
         );
 
-        return {
-            hasAccount: true,
-            isComplete,
-            accountId: user.stripeConnectedAccountId,
-        };
+        return { hasAccount: true, isComplete, accountId };
     }
-
     /**
    * ✅ CONFIRMAR PAGO DESDE WEBHOOK
    * Esta función busca la transacción pendiente y la completa
@@ -642,7 +630,7 @@ export class PaymentService {
             // 1️⃣1️⃣ ACTUALIZAR STATS DE USUARIOS
             if (job.status === 'IN_PROGRESS') {
                 // Decrementar trabajos del provider
-                let providerId  = job.provider?._id.toString() || '';
+                let providerId = job.provider?._id.toString() || '';
                 await this.userService.updateStats(providerId, {
                     'stats.jobsReceived': -1
                 });
@@ -650,7 +638,7 @@ export class PaymentService {
 
             this.logger.log(`🎉 Refund completado exitosamente para Job ${jobId}`);
 
-            
+
             return {
                 success: true,
                 refundAmount,

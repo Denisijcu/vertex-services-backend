@@ -51,10 +51,21 @@ export class StripeConnectService {
   /**
    * Verificar si cuenta está completamente configurada
    */
-  async isAccountComplete(accountId: string): Promise<boolean> {
+/**
+ * Verificar si cuenta está completamente configurada
+ * Blindaje Nivel Dios para evitar caídas del sistema
+ */
+async isAccountComplete(accountId: string): Promise<boolean> {
+  // Si te mandan el string vacío que pusiste, cortas aquí mismo
+  if (!accountId) return false; 
+
+  try {
     const account = await this.stripe.accounts.retrieve(accountId);
     return account.charges_enabled && account.payouts_enabled;
+  } catch (error) {
+    return false;
   }
+}
 
   /**
    * Obtener detalles de la cuenta

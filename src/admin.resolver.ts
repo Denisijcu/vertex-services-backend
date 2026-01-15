@@ -1,31 +1,38 @@
 import { Resolver, Mutation, Args, Query } from '@nestjs/graphql';
 import { UserService } from './auth/user.service';
-import { UserInfoType } from './user-info-type';
-import { GeneralStatsType } from './general-stats-type';
+import { UserInfoType, GeneralStatsType } from './user-info-type';
 import { UserRole, UserDocument } from './user.schema';
+import { AdminService } from './admin.service';
 
 @Resolver()
 export class AdminResolver {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService, private readonly adminService: AdminService) {}
 
   // ============================================
   // Helper para mapear UserDocument -> UserInfoType
   // ============================================
-  private mapToUserInfo(userDoc: UserDocument): UserInfoType {
-    return {
-      _id: userDoc._id.toString(),
-      name: userDoc.name,
-      email: userDoc.email,
-      role: userDoc.role,
-      isActive: userDoc.isActive,
-      avatar: userDoc.avatar,
-      bio: userDoc.bio,
-      phone: userDoc.phone,
-      location: userDoc.location,
+private mapToUserInfo(userDoc: UserDocument): UserInfoType {
+  return {
+    _id: userDoc._id.toString(),
+    name: userDoc.name,
+    email: userDoc.email,
+    role: userDoc.role,
+    isActive: userDoc.isActive,
+    avatar: userDoc.avatar,
+    bio: userDoc.bio,
+    phone: userDoc.phone,
+    location: userDoc.location,
+    stripeAccountComplete: (userDoc as any).stripeAccountComplete || false,
+    stats: {
       jobsCompleted: userDoc.stats?.jobsCompleted || 0,
       totalEarned: userDoc.stats?.totalEarned || 0,
-    };
-  }
+      averageRating: userDoc.stats?.averageRating || 0,
+      totalReviews: userDoc.stats?.totalReviews || 0,
+    },
+    createdAt: (userDoc as any).createdAt?.toString() || new Date().toISOString(),
+    lastLogin: (userDoc as any).lastLogin?.toString() || null,
+  };
+}
 
   // ============================================
   // Activar / Desactivar usuario
@@ -63,8 +70,8 @@ export class AdminResolver {
   // ============================================
   // Estadísticas generales
   // ============================================
-  @Query(() => GeneralStatsType)
-  async getGeneralStats(): Promise<GeneralStatsType> {
-    return this.userService.getGeneralStats();
-  }
+@Query(() => GeneralStatsType)  // ✅ CORRECTO
+async getGeneralStats(): Promise<GeneralStatsType> {
+  return this.adminService.getGeneralStats();
+}
 }

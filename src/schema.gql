@@ -2,6 +2,16 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type BiometricChallengeResponse {
+  allowCredentials: [BiometricCredentialDescriptor!]!
+  challenge: String!
+}
+
+type BiometricCredentialDescriptor {
+  id: String!
+  type: String!
+}
+
 type BotResponse {
   functionCalled: [String!]
   functionResult: String
@@ -116,11 +126,16 @@ input ForgotPasswordInput {
 }
 
 type GeneralStatsType {
-  activeUsers: Int!
-  totalClients: Int!
+  activeUsers: Float!
+  cancelledJobs: Float!
+  completedJobs: Float!
+  disputesCount: Float!
+  inEscrow: Float!
+  pendingPayments: Float!
+  totalClients: Float!
   totalEarnings: Float!
-  totalProviders: Int!
-  totalUsers: Int!
+  totalProviders: Float!
+  totalUsers: Float!
 }
 
 type Job {
@@ -174,8 +189,11 @@ type JobType {
 type JobUserInfo {
   _id: ID!
   avatar: String
+  bio: String
+  client: String
   email: String!
   name: String!
+  provider: String
 }
 
 type LastMessageInfo {
@@ -247,9 +265,9 @@ type Mutation {
   disableBiometric: User!
   enable2FA: TwoFactorSetupResponse!
   enableBiometric(publicKey: String!): User!
-  forceRefund(jobId: ID!, reason: String!): RefundResponse!
   forceSeed: Boolean!
   forgotPassword(input: ForgotPasswordInput!): MessageResponse!
+  getBiometricChallenge(email: String!): BiometricChallengeResponse!
   getStripeConnectOnboardingLink: String!
   getStripeOnboardingLink: String!
   login(input: LoginInput!): LoginResponse!
@@ -281,6 +299,7 @@ type Mutation {
 
   """Actualizar redes sociales"""
   updateSocialLinks(input: SocialLinksInput!): UserProfileType!
+  verifyBiometricLogin(assertion: String!, email: String!): LoginResponse!
   verifyEmail(input: VerifyEmailInput!): MessageResponse!
   vertexCleanStats: String!
   withdrawFunds(amount: Float!): Transaction!
@@ -640,17 +659,19 @@ type UserInfo {
 }
 
 type UserInfoType {
-  _id: String!
+  _id: ID!
   avatar: String
   bio: String
+  createdAt: String
   email: String!
   isActive: Boolean!
-  jobsCompleted: Float
+  lastLogin: String
   location: String
   name: String!
   phone: String
   role: String!
-  totalEarned: Float
+  stats: UserStatsType
+  stripeAccountComplete: Boolean
 }
 
 type UserProfileType {
@@ -709,6 +730,13 @@ type UserStatistics {
   totalEarned: Float!
   totalReviews: Float!
   totalSpent: Float!
+}
+
+type UserStatsType {
+  averageRating: Float!
+  jobsCompleted: Float!
+  totalEarned: Float!
+  totalReviews: Float!
 }
 
 type UserTwoFactorAuth {

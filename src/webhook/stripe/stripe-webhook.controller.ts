@@ -4,6 +4,7 @@ import {
   Req,
   Headers,
   BadRequestException,
+  Inject, forwardRef,
   Logger,
 } from '@nestjs/common';
 import { RawBodyRequest } from '@nestjs/common';
@@ -18,7 +19,8 @@ export class StripeWebhookController {
   private webhookSecret: string;
 
   // ✅ Inyectamos el servicio sin romper el constructor
-  constructor(private readonly paymentService: PaymentService) {
+  constructor(@Inject(forwardRef(() => PaymentService)) // 👈 Agrégalo también aquí
+    private readonly paymentService: PaymentService) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
     this.webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
     
