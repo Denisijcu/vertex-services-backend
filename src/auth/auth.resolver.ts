@@ -402,8 +402,4 @@ export class AuthResolver {
       throw new BadRequestException('Fallo en la verificación de identidad');
     }
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 6bf5987400caab120e289927937bb7636d667405

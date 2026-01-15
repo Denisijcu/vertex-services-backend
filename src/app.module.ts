@@ -37,27 +37,29 @@ import { Job, JobSchema } from './job.schema';
     }),
 
     GraphQLModule.forRoot<ApolloDriverConfig>({
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> d183c33554e4fb6cd7d5f5d07daf0936c8f0dd37
       driver: ApolloDriver,
-      csrfPrevention: false, // Mantener en false para compatibilidad con Apollo Sandbox y uploads
+      csrfPrevention: false,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
-      
-      
-      // ✅ CORRECCIÓN CLAVE: 
-      // Eliminamos 'uploads: false' para permitir que el middleware de main.ts tome el control.
-      // No ponemos 'uploads: true' porque esa es la configuración vieja de Apollo 2.
-      
       playground: process.env.NODE_ENV !== 'production',
       introspection: process.env.NODE_ENV !== 'production',
-      context: ({ req, res }: { req: any; res: any }) => ({ req, res }),
+      
+      // 🔥 CORRECCIÓN CLAVE: Context mejorado
+      context: ({ req, res }: { req: any; res: any }) => {
+        console.log('🎯 GraphQL Context creado');
+        console.log('🔑 Authorization Header:', req?.headers?.authorization ? '✅ Presente' : '❌ Ausente');
+        console.log('🍪 Cookie token:', req?.cookies?.token ? '✅ Presente' : '❌ Ausente');
+        
+        return { req, res };
+      },
 
       formatError: (error) => {
-        // Log detallado en consola para cazar cualquier error de multipart
-        console.error('🚀 Vertex GraphQL Error:', error);
+        console.error('🚀 Vertex GraphQL Error:', {
+          message: error.message,
+          code: error.extensions?.code,
+          path: error.path,
+          originalError: error.extensions?.originalError,
+        });
         return {
           message: error.message,
           code: error.extensions?.code,
@@ -65,28 +67,6 @@ import { Job, JobSchema } from './job.schema';
         };
       },
     }),
-<<<<<<< HEAD
-=======
-  driver: ApolloDriver,
-  csrfPrevention: false, // Permite peticiones sin headers especiales
-  autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-  sortSchema: true,
-  playground: true,      // Forzamos visualización del playground en Render
-  introspection: true,   // Forzamos lectura del esquema desde fuera
-  context: ({ req, res }: { req: any; res: any }) => ({ req, res }),
-  formatError: (error) => {
-    // Esto te ayudará a debuguear errores en la consola de Render
-    console.error('❌ GraphQL Error:', error);
-    return {
-      message: error.message,
-      code: error.extensions?.code,
-      path: error.path,
-    };
-  },
-}),
->>>>>>> 6bf5987400caab120e289927937bb7636d667405
-=======
->>>>>>> d183c33554e4fb6cd7d5f5d07daf0936c8f0dd37
 
     MongooseModule.forRoot(
       process.env.MONGODB_URI || 'mongodb://localhost:27017/vertex-coders-db',
@@ -107,7 +87,7 @@ import { Job, JobSchema } from './job.schema';
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'vertex-secret-key-2024-super-secure',
       signOptions: {
-        expiresIn: '60m',
+        expiresIn: '60m', // 👈 Considera aumentar a '7d' para desarrollo
         issuer: 'vertex-amazon-api',
       },
       global: true,
@@ -136,5 +116,7 @@ import { Job, JobSchema } from './job.schema';
 export class AppModule {
   constructor() {
     console.log('🚀 Vertex Enterprise Server initialized');
+    console.log('🔐 JWT Secret configured:', process.env.JWT_SECRET ? '✅' : '❌ USING DEFAULT');
+    console.log('🗄️ MongoDB URI:', process.env.MONGODB_URI ? '✅ Configured' : '❌ Using localhost');
   }
 }
