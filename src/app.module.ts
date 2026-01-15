@@ -38,6 +38,9 @@ import { Job, JobSchema } from './job.schema';
 
     GraphQLModule.forRoot<ApolloDriverConfig>({
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> d183c33554e4fb6cd7d5f5d07daf0936c8f0dd37
       driver: ApolloDriver,
       csrfPrevention: false, // Mantener en false para compatibilidad con Apollo Sandbox y uploads
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
@@ -62,6 +65,7 @@ import { Job, JobSchema } from './job.schema';
         };
       },
     }),
+<<<<<<< HEAD
 =======
   driver: ApolloDriver,
   csrfPrevention: false, // Permite peticiones sin headers especiales
@@ -81,6 +85,8 @@ import { Job, JobSchema } from './job.schema';
   },
 }),
 >>>>>>> 6bf5987400caab120e289927937bb7636d667405
+=======
+>>>>>>> d183c33554e4fb6cd7d5f5d07daf0936c8f0dd37
 
     MongooseModule.forRoot(
       process.env.MONGODB_URI || 'mongodb://localhost:27017/vertex-coders-db',
