@@ -402,8 +402,4 @@ export class AuthService {
       }
     };
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 6bf5987400caab120e289927937bb7636d667405
