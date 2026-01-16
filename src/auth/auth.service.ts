@@ -6,25 +6,26 @@ import * as bcrypt from 'bcrypt';
 import * as speakeasy from 'speakeasy';
 import * as qrcode from 'qrcode';
 import { User, UserDocument } from '../user.schema';
-import { PostQuantumCryptoService } from '../crypto/post-quantum-crypto.service'; // ✅ AGREGAR
+import { PostQuantumCryptoService } from '../crypto/post-quantum-crypto.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
-    private postQuantumCrypto: PostQuantumCryptoService, // ✅ INYECTAR
+    private postQuantumCrypto: PostQuantumCryptoService,
   ) { }
 
   // ============================================
-  // 1. REGISTRO DE USUARIO
+  // 1. REGISTRO CON POST-QUANTUM (OPCIONAL)
   // ============================================
   async register(
     email: string,
     password: string,
     name: string,
     role?: string,
-    termsAccepted?: boolean
+    termsAccepted?: boolean,
+    useQuantumSafe?: boolean // 👈 NUEVO: Parámetro opcional
   ) {
     try {
       // Validaciones
@@ -47,8 +48,23 @@ export class AuthService {
         throw new BadRequestException('Password must be at least 8 characters long');
       }
 
-      // 🔐 USAR BCRYPT TEMPORALMENTE (sin post-quantum por ahora)
-      const hashedPassword = await bcrypt.hash(password, 10);
+      let hashedPassword: string;
+      let passwordSalt: string | undefined;
+      let cryptoAlgorithm: string;
+
+      // 🔐 DECISION: Post-Quantum o bcrypt
+      if (useQuantumSafe) {
+        console.log('🔐 Using Post-Quantum cryptography for new user');
+        const { hash, salt } = this.postQuantumCrypto.hashPassword(password);
+        hashedPassword = hash;
+        passwordSalt = salt;
+        cryptoAlgorithm = 'SHA3-PBKDF2-QUANTUM';
+      } else {
+        console.log('🔐 Using bcrypt for new user (legacy mode)');
+        hashedPassword = await bcrypt.hash(password, 10);
+        passwordSalt = undefined;
+        cryptoAlgorithm = 'bcrypt';
+      }
 
       // Generar token de verificación de email
       const emailVerificationToken = this.generateRandomToken();
@@ -57,11 +73,15 @@ export class AuthService {
       const newUser = new this.userModel({
         email: email.toLowerCase(),
         password: hashedPassword,
+        passwordSalt,
+        cryptoAlgorithm,
+        quantumSafeEnabled: useQuantumSafe || false,
         name,
         role: role || 'CLIENT',
         emailVerificationToken,
         emailVerified: false,
         termsAcceptedAt: new Date(),
+        passwordChangedAt: new Date(),
         stats: {
           jobsCompleted: 0,
           jobsReceived: 0,
@@ -74,11 +94,14 @@ export class AuthService {
 
       await newUser.save();
 
+      console.log(`✅ User registered with ${cryptoAlgorithm}`);
       console.log(`📧 Email verification: http://localhost:4200/verify-email?token=${emailVerificationToken}`);
 
       return {
         message: 'User registered successfully. Please verify your email to activate your account.',
-        emailVerificationToken
+        emailVerificationToken,
+        cryptoAlgorithm, // 👈 Para que el frontend sepa qué se usó
+        quantumSafe: useQuantumSafe || false
       };
     } catch (error) {
       console.error('❌ Register error:', error);
@@ -87,10 +110,7 @@ export class AuthService {
   }
 
   // ============================================
-  // 2. LOGIN (SOPORTA AMBOS: bcrypt y post-quantum)
-  // ============================================
-  // ============================================
-  // 2. LOGIN (SOPORTA AMBOS: bcrypt y post-quantum)
+  // 2. LOGIN HÍBRIDO (SOPORTA AMBOS)
   // ============================================
   async login(email: string, password: string, twoFactorCode?: string) {
     const user = await this.userModel.findOne({ email: email.toLowerCase() });
@@ -99,23 +119,27 @@ export class AuthService {
       throw new BadRequestException('Credenciales inválidas');
     }
 
-    // 🔐 VERIFICAR: Si tiene salt, usa post-quantum. Si no, usa bcrypt (compatibilidad)
     let isPasswordValid = false;
+    let usedQuantumSafe = false;
 
-    if (user.passwordSalt) {
+    // 🔐 VERIFICACIÓN INTELIGENTE
+    if (user.passwordSalt && user.cryptoAlgorithm === 'SHA3-PBKDF2-QUANTUM') {
+      console.log('🔐 Verifying with Post-Quantum crypto');
       try {
         isPasswordValid = this.postQuantumCrypto.verifyPassword(
           password,
           user.password,
           user.passwordSalt
         );
+        usedQuantumSafe = true;
       } catch (error) {
-        console.error('❌ Verify error:', error);
+        console.error('❌ Post-Quantum verify error:', error);
         isPasswordValid = false;
       }
     } else {
-      // Usuario legacy (bcrypt)
+      console.log('🔐 Verifying with bcrypt (legacy)');
       isPasswordValid = await bcrypt.compare(password, user.password);
+      usedQuantumSafe = false;
     }
 
     if (!isPasswordValid) {
@@ -127,7 +151,7 @@ export class AuthService {
       throw new BadRequestException('Tu cuenta ha sido desactivada');
     }
 
-    // Si tiene 2FA habilitado, verificar código
+    // 2FA si está habilitado
     if (user.twoFactorAuth?.enabled) {
       if (!twoFactorCode) {
         return {
@@ -150,7 +174,7 @@ export class AuthService {
 
     // Actualizar último login
     user.lastLogin = new Date();
-    user.lastLoginQuantumSafe = user.passwordSalt ? true : false;
+    user.lastLoginQuantumSafe = usedQuantumSafe;
     await user.save();
 
     // Crear payload del token
@@ -159,8 +183,11 @@ export class AuthService {
       sub: user._id,
       name: user.name,
       role: user.role,
-      quantumSafe: user.passwordSalt ? true : false
+      quantumSafe: usedQuantumSafe,
+      cryptoAlgorithm: user.cryptoAlgorithm || 'bcrypt'
     };
+
+    console.log(`✅ Login successful with ${usedQuantumSafe ? 'Post-Quantum' : 'bcrypt'}`);
 
     return {
       access_token: this.jwtService.sign(payload),
@@ -170,14 +197,140 @@ export class AuthService {
         email: user.email,
         role: user.role,
         avatar: user.avatar,
-        emailVerified: user.emailVerified
+        emailVerified: user.emailVerified,
+        quantumSafe: usedQuantumSafe
       }
     };
   }
 
   // ============================================
-  // 3. VERIFICAR EMAIL (SIN CAMBIOS)
+  // 3. MIGRAR USUARIO A POST-QUANTUM
   // ============================================
+  async migrateToQuantumSafe(userId: string, currentPassword: string) {
+    const user = await this.userModel.findById(userId);
+
+    if (!user) {
+      throw new BadRequestException('Usuario no encontrado');
+    }
+
+    // Verificar contraseña actual
+    let isCurrentPasswordValid = false;
+
+    if (user.passwordSalt) {
+      isCurrentPasswordValid = this.postQuantumCrypto.verifyPassword(
+        currentPassword,
+        user.password,
+        user.passwordSalt
+      );
+    } else {
+      isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    }
+
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException('Contraseña actual incorrecta');
+    }
+
+    // Si ya usa post-quantum, no hacer nada
+    if (user.cryptoAlgorithm === 'SHA3-PBKDF2-QUANTUM') {
+      return {
+        message: 'Esta cuenta ya usa encriptación post-cuántica',
+        alreadyQuantumSafe: true
+      };
+    }
+
+    // Migrar a post-quantum
+    console.log(`🔄 Migrating user ${user.email} to Post-Quantum crypto`);
+
+    const { hash, salt } = this.postQuantumCrypto.hashPassword(currentPassword);
+
+    user.password = hash;
+    user.passwordSalt = salt;
+    user.cryptoAlgorithm = 'SHA3-PBKDF2-QUANTUM';
+    user.quantumSafeEnabled = true;
+    user.passwordChangedAt = new Date();
+
+    await user.save();
+
+    console.log(`✅ User ${user.email} migrated to Post-Quantum successfully`);
+
+    return {
+      message: 'Tu cuenta ha sido migrada a encriptación post-cuántica exitosamente',
+      quantumSafe: true,
+      migratedAt: new Date()
+    };
+  }
+
+  // ============================================
+  // 4. CAMBIAR CONTRASEÑA (CON POST-QUANTUM)
+  // ============================================
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+    useQuantumSafe?: boolean
+  ) {
+    const user = await this.userModel.findById(userId);
+
+    if (!user) {
+      throw new BadRequestException('Usuario no encontrado');
+    }
+
+    // Verificar contraseña actual
+    let isCurrentPasswordValid = false;
+
+    if (user.passwordSalt) {
+      isCurrentPasswordValid = this.postQuantumCrypto.verifyPassword(
+        currentPassword,
+        user.password,
+        user.passwordSalt
+      );
+    } else {
+      isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    }
+
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException('Contraseña actual incorrecta');
+    }
+
+    // Validar nueva contraseña
+    if (newPassword.length < 8) {
+      throw new BadRequestException('La nueva contraseña debe tener al menos 8 caracteres');
+    }
+
+    // Aplicar nueva contraseña con el método deseado
+    const shouldUseQuantum = useQuantumSafe !== undefined ? useQuantumSafe : user.quantumSafeEnabled;
+
+    if (shouldUseQuantum) {
+      console.log('🔐 Changing password with Post-Quantum crypto');
+      const { hash, salt } = this.postQuantumCrypto.hashPassword(newPassword);
+      user.password = hash;
+      user.passwordSalt = salt;
+      user.cryptoAlgorithm = 'SHA3-PBKDF2-QUANTUM';
+      user.quantumSafeEnabled = true;
+    } else {
+      console.log('🔐 Changing password with bcrypt');
+      user.password = await bcrypt.hash(newPassword, 10);
+      user.passwordSalt = undefined;
+      user.cryptoAlgorithm = 'bcrypt';
+      user.quantumSafeEnabled = false;
+    }
+
+    user.passwordChangedAt = new Date();
+    await user.save();
+
+    console.log(`✅ Password changed for ${user.email} using ${user.cryptoAlgorithm}`);
+
+    return {
+      message: 'Contraseña cambiada exitosamente',
+      cryptoAlgorithm: user.cryptoAlgorithm,
+      quantumSafe: user.quantumSafeEnabled
+    };
+  }
+
+  // ============================================
+  // RESTO DE MÉTODOS (SIN CAMBIOS)
+  // ============================================
+  
   async verifyEmail(token: string) {
     const user = await this.userModel.findOne({ emailVerificationToken: token });
 
@@ -192,9 +345,6 @@ export class AuthService {
     return { message: 'Email verificado exitosamente' };
   }
 
-  // ============================================
-  // 4. HABILITAR 2FA (SIN CAMBIOS)
-  // ============================================
   async enable2FA(userId: string) {
     const user = await this.userModel.findById(userId);
 
@@ -230,9 +380,6 @@ export class AuthService {
     };
   }
 
-  // ============================================
-  // 5. CONFIRMAR 2FA (SIN CAMBIOS)
-  // ============================================
   async confirm2FA(userId: string, code: string) {
     const user = await this.userModel.findById(userId);
 
@@ -257,9 +404,6 @@ export class AuthService {
     return { message: '2FA habilitado exitosamente' };
   }
 
-  // ============================================
-  // 6. DESHABILITAR 2FA (SIN CAMBIOS)
-  // ============================================
   async disable2FA(userId: string, code: string) {
     const user = await this.userModel.findById(userId);
 
@@ -289,9 +433,6 @@ export class AuthService {
     return { message: '2FA deshabilitado exitosamente' };
   }
 
-  // ============================================
-  // 7. RECUPERAR CONTRASEÑA (SIN CAMBIOS)
-  // ============================================
   async forgotPassword(email: string) {
     const user = await this.userModel.findOne({ email: email.toLowerCase() });
 
@@ -299,15 +440,9 @@ export class AuthService {
       return { message: 'Si el email existe, recibirás instrucciones de recuperación' };
     }
 
-    // const resetToken = this.generateRandomToken();
-    //const resetExpires = new Date(Date.now() + 3600000); // 1 hora
-
     return { message: 'Si el email existe, recibirás instrucciones de recuperación' };
   }
 
-  // ============================================
-  // HELPERS
-  // ============================================
   private generateRandomToken(): string {
     return require('crypto').randomBytes(32).toString('hex');
   }
@@ -323,66 +458,49 @@ export class AuthService {
   }
 
   async findOneById(id: string) {
-    return this.userModel.findById(id).select('-password').exec();
+    return this.userModel.findById(id).select('-password -passwordSalt').exec();
   }
 
-  // auth.service.ts
-
-  // 1. Generar el Desafío Biométrico
+  // Métodos biométricos sin cambios...
   async generateBiometricChallenge(email: string) {
     const user = await this.userModel.findOne({ email: email.toLowerCase() });
 
-    // ✅ CORRECCIÓN: Accedemos a través de securitySettings
     if (!user || !user.securitySettings?.biometricEnabled || !user.securitySettings?.biometricPublicKey) {
       throw new BadRequestException('La biometría no está configurada o habilitada para esta cuenta');
     }
 
-    // Generamos un challenge aleatorio seguro
     const challenge = this.generateRandomToken();
-
-    // ✅ CORRECCIÓN: Guardamos el challenge dentro del objeto de seguridad
     user.securitySettings.currentBiometricChallenge = challenge;
-
-    // Es vital marcar el sub-objeto como modificado para que Mongoose guarde los cambios
     user.markModified('securitySettings');
     await user.save();
 
     return {
       challenge,
       allowCredentials: [{
-        // Usamos el ID de credencial que definimos en el esquema
-        id: user.securitySettings.biometricPublicKey, // O biometricCredentialId si lo añadiste
+        id: user.securitySettings.biometricPublicKey,
         type: 'public-key'
       }]
     };
   }
 
-  // 2. Verificar Firma y Loguear
   async verifyBiometricSignature(email: string, assertionStr: string) {
     const user = await this.userModel.findOne({ email: email.toLowerCase() });
     if (!user) throw new BadRequestException('Usuario no encontrado');
 
-    // ✅ CORRECCIÓN: Ahora usamos 'assertion' para validar y que no dé error de variable no leída
     const assertion = JSON.parse(assertionStr);
-
-    // AQUÍ: En producción usarías @simplewebauthn/server para validar contra user.securitySettings.biometricPublicKey
-    // Pasamos 'assertion' a la lógica para que el linter esté feliz
     const isSignatureValid = !!assertion && user.securitySettings?.biometricEnabled;
 
     if (!isSignatureValid) {
       throw new UnauthorizedException('Firma biométrica inválida o servicio no habilitado');
     }
 
-    // ✅ CORRECCIÓN: Limpiar challenge dentro de securitySettings
     if (user.securitySettings) {
       user.securitySettings.currentBiometricChallenge = undefined;
     }
     user.lastLogin = new Date();
-
     user.markModified('securitySettings');
     await user.save();
 
-    // Generar token JWT
     const payload = {
       email: user.email,
       sub: user._id,
