@@ -12,7 +12,7 @@ export class Notification {
 
   @Field(() => ID)
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  recipientId: Types.ObjectId; // El ID de María Pérez
+  recipientId: Types.ObjectId;
 
   @Field()
   @Prop({ required: true })
@@ -30,13 +30,18 @@ export class Notification {
   @Prop()
   type?: string;
 
-  // 🔥 AGREGA ESTA LÍNEA AQUÍ:
+  // 🆕 NUEVO CAMPO PARA ALERTAS DEL SISTEMA
+  @Field({ nullable: true })
+  @Prop()
+  severity?: string; // 'INFO', 'WARNING', 'ERROR', 'SUCCESS'
+
   @Field(() => Date, { nullable: true })
   createdAt: Date;
-
-
-
 }
 
-
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
+
+// Índices para mejor performance
+NotificationSchema.index({ recipientId: 1, isRead: 1 });
+NotificationSchema.index({ createdAt: -1 });
+NotificationSchema.index({ type: 1 });
