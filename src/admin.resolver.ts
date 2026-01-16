@@ -3,7 +3,7 @@ import { UserService } from './auth/user.service';
 import { UserInfoType, GeneralStatsType } from './user-info-type';
 import { UserRole, UserDocument } from './user.schema';
 import { AdminService } from './admin.service';
-import { JobInfoType } from './job-info-type';
+import { Job } from './job.schema'; // 👈 IMPORT CORRECTO
 
 // ============================================
 // RESPONSE TYPES
@@ -74,8 +74,8 @@ export class AdminResolver {
     return this.adminService.getGeneralStats();
   }
 
-  @Query(() => [JobInfoType])
-  async getAllJobs(): Promise<any[]> {
+  @Query(() => [Job]) // 👈 CORRECTO
+  async getAllJobs(): Promise<Job[]> {
     return this.adminService.getAllJobs();
   }
 
