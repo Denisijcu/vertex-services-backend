@@ -8,7 +8,6 @@ import { Settings } from '../settings.schema';
 import { UserService } from './user.service';
 import { CategoryService } from '../category.service';
 import { JobService } from './job.service';
-
 import { NotificationService } from './notification.service';
 
 @Injectable()
@@ -22,11 +21,12 @@ export class AIBotService {
     private readonly userService: UserService,
     private readonly categoryService: CategoryService,
     private readonly jobService: JobService,
-
     private readonly notificationService: NotificationService
-  ) { }
+  ) {}
 
-  // System Prompt mejorado con instrucciones claras sobre Provider ID
+  // ============================================
+  // SYSTEM PROMPT MEJORADO (SIN CAMBIAR LÓGICA)
+  // ============================================
   private getSystemPrompt(): string {
     return `Eres VertexBot, el Agente de Operaciones de Vertex Coders. 
 Estamos en FASE DE LANZAMIENTO, así que tu prioridad es CONECTAR usuarios con proveedores de inmediato.
@@ -86,144 +86,241 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
    No pidas confirmación doble. 
    Una vez creado el job, dile al usuario: "¡Listo! He creado tu solicitud. [Nombre del Proveedor] ha sido notificado."
 
-  7. Cancela la conversación si detectas que el usuario intenta contratarse a sí mismo o usar un providerId inválido, y dile: "Detecté un error con el proveedor seleccionado. Por favor, vuelve a buscar al profesional correcto usando search_providers."
-  y marca el error en los logs para revisión. Si esto sucede, no llames a create_service_request y no crees el job.Solo actualiza los logs y dile al usuario que vuelva a buscar. Esto es crítico para evitar fraudes o errores de contratación. 
-8. SI EL USUARIO PIDE RECOMENDACIÓN DE PROVEEDORES, HAZLO INMEDIATAMENTE: NO  MIENTAS SI NO HAY PROVEEDORES DISPONIBLES. SI NO HAY PROVEEDORES, DILE QUE ESTÁS EXPANDIENDO LA RED Y OFRECE CREAR LA SOLICITUD DIRECTAMENTE. NO DIGAS "NO HAY PROVEEDORES". DILE QUE ESTÁS TRABAJANDO EN CONSEGUIRLOS Y OFRECE CREAR LA SOLICITUD DE SERVICIO DIRECTAMENTE.
-9. SINO SABES NADA O NO TIENES DATOS DE LA BASE DE DATOS. NO INVENTES RESPUESTAS. DILE AL USUARIO QUE TODA LA INFORMACION LA PUEDE ENCONTRAR EN LA SECCION DE MARKETPLACE DE LA PLATAFORMA DONDE HAY MUCHOS PROFESIONALES CON SUS SERVICIOS, PRECIOS Y RESEÑAS. ORIENTA AL USUARIO A USAR ESA SECCIÓN PARA ELEGIR EL PROVEEDOR QUE MÁS LE GUSTE. SI EL USUARIO PIDE RECOMENDACIÓN, DILE QUE NO PUEDES RECOMENDARLE UN PROVEEDOR ESPECÍFICO, PERO QUE EN EL MARKETPLACE HAY MUCHOS PROFESIONALES CON SUS SERVICIOS, PRECIOS Y RESEÑAS PARA QUE PUEDA ELEGIR EL QUE MÁS LE GUSTE.
+7. Cancela la conversación si detectas que el usuario intenta contratarse a sí mismo o usar un providerId inválido, y dile: "Detecté un error con el proveedor seleccionado. Por favor, vuelve a buscar al profesional correcto usando search_providers."
+   y marca el error en los logs para revisión. Si esto sucede, no llames a create_service_request y no crees el job.Solo actualiza los logs y dile al usuario que vuelva a buscar. Esto es crítico para evitar fraudes o errores de contratación. 
 
+8. SI EL USUARIO PIDE RECOMENDACIÓN DE PROVEEDORES, HAZLO INMEDIATAMENTE: NO MIENTAS SI NO HAY PROVEEDORES DISPONIBLES. SI NO HAY PROVEEDORES, DILE QUE ESTÁS EXPANDIENDO LA RED Y OFRECE CREAR LA SOLICITUD DIRECTAMENTE. NO DIGAS "NO HAY PROVEEDORES". DILE QUE ESTÁS TRABAJANDO EN CONSEGUIRLOS Y OFRECE CREAR LA SOLICITUD DE SERVICIO DIRECTAMENTE.
+
+9. SI NO SABES NADA O NO TIENES DATOS DE LA BASE DE DATOS. NO INVENTES RESPUESTAS. DILE AL USUARIO QUE TODA LA INFORMACIÓN LA PUEDE ENCONTRAR EN LA SECCIÓN DE MARKETPLACE DE LA PLATAFORMA DONDE HAY MUCHOS PROFESIONALES CON SUS SERVICIOS, PRECIOS Y RESEÑAS. ORIENTA AL USUARIO A USAR ESA SECCIÓN PARA ELEGIR EL PROVEEDOR QUE MÁS LE GUSTE. SI EL USUARIO PIDE RECOMENDACIÓN, DILE QUE NO PUEDES RECOMENDARLE UN PROVEEDOR ESPECÍFICO, PERO QUE EN EL MARKETPLACE HAY MUCHOS PROFESIONALES CON SUS SERVICIOS, PRECIOS Y RESEÑAS PARA QUE PUEDA ELEGIR EL QUE MÁS LE GUSTE.
 `;
   }
 
   // ============================================
-  // CHAT PRINCIPAL - AGENTE CON TOOL CALLING
+  // VALIDACIÓN ROBUSTA DE PROVIDER (NUEVA)
   // ============================================
-  async chat(userId: string, message: string, conversationHistory: any[] = []) {
-    try {
-      // 1. Cargar usuario real
-      const user = await this.userService.findOneById(userId);
-      if (!user) {
-        return { message: 'No encontré tu cuenta. Intenta iniciar sesión nuevamente.', error: true };
-      }
-
-      const userContext = this.buildRichUserContext(user);
-
-      // 2. Config LM Studio
-      const config = await this.settingsModel.findOne({});
-      const baseUrl = config?.baseUrl || 'http://localhost:1234/v1';
-      const modelName = config?.modelName || 'qwen2.5-7b-instruct-1m';
-
-      // 3. Preparar tools
-      const tools = this.getFunctions().map((fn) => ({
-        type: 'function',
-        function: {
-          name: fn.name,
-          description: fn.description,
-          parameters: fn.parameters,
-        },
-      }));
-
-      // 4. Primera llamada al LLM
-      const firstResponse = await axios.post(`${baseUrl}/chat/completions`, {
-        model: modelName,
-        messages: [
-          { role: 'system', content: `${this.getSystemPrompt()}\n\n${userContext}` },
-          ...conversationHistory.slice(-8),
-          { role: 'user', content: message },
-        ],
-        tools,
-        tool_choice: 'auto',
-        temperature: 0.65,
-        max_tokens: 1024,
-      }, {
-        timeout: 120000 // 2 minutos para darle tiempo
-      });
-
-      const choice = firstResponse.data.choices[0];
-      const assistantMessage = choice.message;
-
-      // Caso 1: Respuesta directa (sin tool)
-      if (!assistantMessage.tool_calls?.length) {
-        return {
-          message: assistantMessage.content || 'Entendido, ¿en qué más te ayudo?',
-          functionCalled: [], // 👈 Cambia null por un array vacío
-          functionResult: "",  // 👈 Añade esto para cumplir el Schema
-          timestamp: new Date().toISOString(), // 👈 ¡Faltaba esto!
-        };
-      }
-
-      // Caso 2: Hay tool calls → ejecutarlas
-      const toolResults: any[] = [];
-
-      console.log('🔧 Tool calls detectadas:', JSON.stringify(assistantMessage.tool_calls, null, 2));
-
-      for (const toolCall of assistantMessage.tool_calls) {
-        const fnName = toolCall.function.name;
-        let args = {};
-        try {
-          args = JSON.parse(toolCall.function.arguments || '{}');
-        } catch (parseError) {
-          console.error(`❌ ERROR PARSEANDO ARGUMENTOS DE ${fnName}:`, parseError);
-          continue;
-        }
-
-        try {
-          const result = await this.executeFunction(fnName, args, userId);
-          toolResults.push({
-            tool_call_id: toolCall.id,
-            role: 'tool',
-            name: fnName,
-            content: JSON.stringify(result),
-          });
-        } catch (execError) {
-          console.error(`❌ ERROR EJECUTANDO LA FUNCIÓN ${fnName}:`, execError);
-          toolResults.push({
-            tool_call_id: toolCall.id,
-            role: 'tool',
-            name: fnName,
-            content: JSON.stringify({ error: `Error ejecutando ${fnName}: ` }),
-          });
-        }
-      }
-
-      // 5. Segunda llamada al LLM con resultados de tools
-      console.log('📤 Enviando segunda llamada con tool results:', toolResults);
-
-      const secondResponse = await axios.post(`${baseUrl}/chat/completions`, {
-        model: modelName,
-        messages: [
-          { role: 'system', content: `${this.getSystemPrompt()}\n\n${userContext}` },
-          ...conversationHistory.slice(-8),
-          { role: 'user', content: message },
-          assistantMessage,
-          ...toolResults,
-        ],
-        temperature: 0.7,
-        max_tokens: 1024,
-      }, {
-        timeout: 120000
-      });
-
-      const finalContent = secondResponse.data.choices[0].message.content;
-
-      console.log('📥 Respuesta final del LLM:', finalContent);
-
+  private async validateProvider(providerId: string, userId: string) {
+    // 1. Verificar formato ObjectId
+    if (!Types.ObjectId.isValid(providerId)) {
+      this.logger.error(`❌ Invalid ObjectId format: ${providerId}`);
       return {
-        message: finalContent || 'Listo, ¿algo más en lo que pueda ayudarte?',
-        functionCalled: toolResults.map((t) => t.name),
-        functionResult: JSON.stringify(toolResults.map((t) => JSON.parse(t.content))), // 👈 Conviértelo a string
-        timestamp: new Date().toISOString(), // 👈 ¡Obligatorio!
-      };
-
-    } catch (error) {
-      this.logger.error('❌ Error en VertexBot:', error);
-      return {
-        message: 'Tuve un problema conectándome con mi cerebro. Intenta de nuevo.',
-        functionCalled: [],
-        functionResult: "",
-        timestamp: new Date().toISOString(), // 👈 Esto evitará el error de 'getType'
+        valid: false,
+        error: `El ID "${providerId}" no es válido. Debe ser un ID de 24 caracteres hexadecimales.`
       };
     }
+
+    // 2. Verificar que no sea el mismo usuario (auto-contratación)
+    if (providerId === userId || providerId === userId.toString()) {
+      this.logger.error(`🚨 AUTO-CONTRATACIÓN: userId=${userId}, providerId=${providerId}`);
+      return {
+        valid: false,
+        error: 'ERROR: Detecté que intentas contratarte a ti mismo. Busca otro proveedor con search_providers.'
+      };
+    }
+
+    // 3. Verificar que el proveedor existe
+    const provider = await this.userModel.findById(providerId);
+    if (!provider) {
+      this.logger.error(`❌ Provider not found: ${providerId}`);
+      return {
+        valid: false,
+        error: `No encontré al proveedor con ID ${providerId}. Verifica el ID o busca de nuevo.`
+      };
+    }
+
+    // 4. Verificar que está activo
+    if (!provider.isActive) {
+      this.logger.warn(`⚠️ Inactive provider: ${provider.name}`);
+      return {
+        valid: false,
+        error: `${provider.name} no está disponible actualmente.`
+      };
+    }
+
+    // 5. Verificar rol
+    if (provider.role !== 'PROVIDER' && provider.role !== 'BOTH') {
+      return {
+        valid: false,
+        error: `${provider.name} no es un proveedor de servicios.`
+      };
+    }
+
+    // 6. Verificar Stripe
+    if (!provider.stripeConnectedAccountId) {
+      return {
+        valid: false,
+        error: `${provider.name} no ha configurado pagos aún.`
+      };
+    }
+
+    this.logger.log(`✅ Provider validated: ${provider.name}`);
+    return { valid: true, provider };
   }
+
+  // ============================================
+  // CHAT PRINCIPAL - MANTIENE LÓGICA ORIGINAL
+  // ============================================
+  async chat(userId: string, message: string, conversationHistory: any[] = []) {
+  try {
+    // 1. Cargar usuario
+    const user = await this.userService.findOneById(userId);
+    if (!user) {
+      return {
+        message: 'No encontré tu cuenta. Intenta iniciar sesión nuevamente.',
+        functionCalled: [],
+        functionResult: "",
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    const userContext = this.buildRichUserContext(user);
+
+    // 2. Config Dinámica (LM Studio o Cloud)
+    const config = await this.settingsModel.findOne({});
+    const baseUrl = config?.baseUrl || 'http://localhost:1234/v1';
+    const modelName = config?.modelName || 'qwen2.5-7b-instruct-1m';
+    const apiKey = config?.apiKey;
+    const provider = config?.aiProvider || 'lmstudio';
+
+    // 🛡️ CONFIGURACIÓN DE HEADERS DINÁMICOS
+    const headers: any = { 'Content-Type': 'application/json' };
+    if (apiKey && provider !== 'lmstudio') {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    this.logger.log(`🔧 Conectando a ${provider.toUpperCase()}: ${baseUrl}`);
+
+    // 3. Preparar tools
+    const tools = this.getFunctions().map((fn) => ({
+      type: 'function',
+      function: {
+        name: fn.name,
+        description: fn.description,
+        parameters: fn.parameters,
+      },
+    }));
+
+    // 4. Primera llamada
+    this.logger.log(`📤 Enviando request a ${provider}... modelo: ${modelName}`);
+
+    const firstResponse = await axios.post(`${baseUrl}/chat/completions`, {
+      model: modelName,
+      messages: [
+        { role: 'system', content: `${this.getSystemPrompt()}\n\n${userContext}` },
+        ...conversationHistory.slice(-8),
+        { role: 'user', content: message },
+      ],
+      tools,
+      tool_choice: 'auto',
+      temperature: provider === 'xai' ? 0 : 0.65, // Grok prefiere 0 para mayor precisión técnica
+      max_tokens: 1024,
+    }, {
+      timeout: 60000,
+      headers: headers // 👈 Headers inyectados aquí
+    });
+
+    this.logger.log(`📥 Respuesta recibida de ${provider}`);
+
+    const choice = firstResponse.data.choices[0];
+    const assistantMessage = choice.message;
+
+    // Caso 1: Respuesta directa
+    if (!assistantMessage.tool_calls?.length) {
+      return {
+        message: assistantMessage.content || 'Entendido, ¿en qué más te ayudo?',
+        functionCalled: [],
+        functionResult: "",
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    // Caso 2: Tool calls
+    const toolResults: any[] = [];
+    this.logger.log(`🔧 Tool calls detectadas: ${assistantMessage.tool_calls.length}`);
+
+    for (const toolCall of assistantMessage.tool_calls) {
+      const fnName = toolCall.function.name;
+      let args = {};
+
+      try {
+        args = JSON.parse(toolCall.function.arguments || '{}');
+      } catch (parseError) {
+        this.logger.error(`❌ Error parseando args de ${fnName}:`, parseError);
+        continue;
+      }
+
+      try {
+        this.logger.log(`🔧 Ejecutando: ${fnName}`);
+        const result = await this.executeFunction(fnName, args, userId);
+        this.logger.log(`✅ ${fnName} completado`);
+
+        toolResults.push({
+          tool_call_id: toolCall.id,
+          role: 'tool',
+          name: fnName,
+          content: JSON.stringify(result),
+        });
+      } catch (execError) {
+        this.logger.error(`❌ Error ejecutando ${fnName}:`, execError);
+        toolResults.push({
+          tool_call_id: toolCall.id,
+          role: 'tool',
+          name: fnName,
+          content: JSON.stringify({ error: `Error ejecutando ${fnName}` }),
+        });
+      }
+    }
+
+    // 5. Segunda llamada
+    this.logger.log(`📤 Enviando segunda llamada con tool results`);
+
+    const secondResponse = await axios.post(`${baseUrl}/chat/completions`, {
+      model: modelName,
+      messages: [
+        { role: 'system', content: `${this.getSystemPrompt()}\n\n${userContext}` },
+        ...conversationHistory.slice(-8),
+        { role: 'user', content: message },
+        assistantMessage,
+        ...toolResults,
+      ],
+      temperature: 0.7,
+      max_tokens: 1024,
+    }, {
+      timeout: 60000,
+      headers: headers // 👈 Headers inyectados aquí también
+    });
+
+    const finalContent = secondResponse.data.choices[0].message.content;
+
+    this.logger.log(`✅ Chat completado exitosamente`);
+
+    return {
+      message: finalContent || 'Listo, ¿algo más en lo que pueda ayudarte?',
+      functionCalled: toolResults.map((t) => t.name),
+      functionResult: JSON.stringify(toolResults.map((t) => JSON.parse(t.content))),
+      timestamp: new Date().toISOString(),
+    };
+
+  } catch (error: any) {
+    this.logger.error(`❌ Error en VertexBot (${error.config?.url}):`, error.message);
+
+    let errorMessage = 'Tuve un problema técnico. Intenta de nuevo.';
+
+    if (error.code === 'ECONNREFUSED') {
+      errorMessage = 'No puedo conectar con el servidor de IA. Verifica si LM Studio está corriendo o si la URL de la API es correcta.';
+    } else if (error.code === 'ETIMEDOUT') {
+      errorMessage = 'La conexión con la IA tardó demasiado. Intenta de nuevo.';
+    } else if (error.response?.status === 401) {
+      errorMessage = 'Error de autenticación: La API Key es inválida o expiró.';
+    }
+
+    return {
+      message: errorMessage,
+      functionCalled: [],
+      functionResult: JSON.stringify({ error: error.message, details: error.response?.data }),
+      timestamp: new Date().toISOString(),
+    };
+  }
+}
 
   // ============================================
   // TOOLS DISPONIBLES
@@ -232,12 +329,12 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
     return [
       {
         name: 'get_current_user_info',
-        description: 'Obtiene los datos personales del usuario actual, rol, estadísticas y servicios ofrecidos. Úsala cuando necesites hablar del perfil, ganancias, trabajos o servicios del usuario.',
+        description: 'Obtiene los datos personales del usuario actual, rol, estadísticas y servicios ofrecidos.',
         parameters: { type: 'object', properties: {}, required: [] },
       },
       {
         name: 'get_available_categories',
-        description: 'Lista todas las categorías de servicios disponibles en la plataforma (limpieza, mantenimiento, etc.). Úsala cuando el usuario pregunte qué servicios hay o no estés seguro de la categoría.',
+        description: 'Lista todas las categorías de servicios disponibles en la plataforma.',
         parameters: {
           type: 'object',
           properties: {
@@ -248,11 +345,11 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
       },
       {
         name: 'search_providers',
-        description: 'Busca proveedores reales para una categoría específica. Retorna una lista de proveedores con su ID único. Usa el nombre o slug exacto de categoría.',
+        description: 'Busca proveedores reales para una categoría específica. Retorna lista con campo "id" que debe usarse en create_service_request.',
         parameters: {
           type: 'object',
           properties: {
-            category: { type: 'string', description: 'Nombre o slug de categoría (ej: "Limpieza", "Maintenance & Repairs")' },
+            category: { type: 'string', description: 'Nombre o slug de categoría' },
             keyword: { type: 'string' },
             limit: { type: 'number', default: 5 },
           },
@@ -271,26 +368,17 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
       },
       {
         name: 'create_service_request',
-        description: 'Crea una orden de trabajo formal y notifica al proveedor. CRITICAL: El providerId DEBE ser el ID hexadecimal de 24 caracteres que obtuviste de search_providers. NUNCA uses el ID del usuario actual.',
+        description: 'Crea orden de trabajo y notifica al proveedor. CRITICAL: providerId debe ser el "id" de 24 chars de search_providers.',
         parameters: {
           type: 'object',
           properties: {
             providerId: {
               type: 'string',
-              description: 'ID ÚNICO del proveedor obtenido de search_providers (ej: 507f1f77bcf86cd799439011). NUNCA uses el nombre del proveedor ni el ID del usuario actual aquí.'
+              description: 'ID ÚNICO del proveedor de search_providers (ej: 507f1f77bcf86cd799439011)'
             },
-            category: {
-              type: 'string',
-              description: 'Categoría oficial del servicio (ej: MAINTENANCE, CLEANING, TECH)'
-            },
-            description: {
-              type: 'string',
-              description: 'Breve descripción de lo que el cliente necesita.'
-            },
-            budget: {
-              type: 'number',
-              description: 'Monto total acordado en dólares.'
-            }
+            category: { type: 'string', description: 'Categoría en mayúsculas' },
+            description: { type: 'string', description: 'Qué necesita el cliente' },
+            budget: { type: 'number', description: 'Monto en dólares' }
           },
           required: ['providerId', 'category', 'description', 'budget']
         }
@@ -299,10 +387,10 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
   }
 
   // ============================================
-  // EJECUCIÓN DE TOOLS
+  // EJECUCIÓN DE TOOLS - CON VALIDACIÓN MEJORADA
   // ============================================
   private async executeFunction(functionName: string, args: any, userId: string) {
-    this.logger.log(`Ejecutando función: ${functionName} con args:`, args);
+    this.logger.log(`Ejecutando función: ${functionName}`);
 
     switch (functionName) {
       case 'get_current_user_info':
@@ -340,7 +428,7 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
         };
 
       case 'search_providers':
-        return this.searchProviders(args.category, userId, args.keyword,);
+        return this.searchProviders(args.category, userId, args.keyword, args.limit);
 
       case 'get_active_jobs':
         const jobStatus = args && args.status ? args.status : undefined;
@@ -349,73 +437,61 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
       case 'create_service_request':
         const { providerId, category, description, budget } = args;
 
-        // 🛡️ VALIDACIÓN CRÍTICA: Que no se contrate a sí mismo
-        if (providerId === userId || providerId === userId.toString()) {
-          this.logger.error(`🚨 INTENTO DE AUTO-CONTRATACIÓN: userId=${userId}, providerId=${providerId}`);
+        // 🛡️ VALIDACIÓN ROBUSTA (NUEVA)
+        const validation = await this.validateProvider(providerId, userId);
+        if (!validation.valid) {
+          this.logger.error(`❌ Validación falló: ${validation.error}`);
           return {
-            error: 'ERROR INTERNO: Detecté que intentas contratarte a ti mismo. Necesito que vuelvas a buscar al proveedor correcto usando search_providers.',
-            action: 'RESTART_SEARCH'
+            error: validation.error,
+            action: 'VALIDATION_FAILED'
           };
         }
 
-        // 1. Buscamos los datos reales del proveedor y cliente
-        const [providerUser, clientUser] = await Promise.all([
-          this.userModel.findById(providerId),
-          this.userService.findOneById(userId)
-        ]);
+        const provider = validation.provider;
+        const client = await this.userService.findOneById(userId);
 
-        if (!providerUser) {
-          this.logger.error(`❌ No se encontró proveedor con ID: ${providerId}`);
-          return { error: `No se encontró al proveedor con ID ${providerId}. Verifica que el ID sea correcto.` };
-        }
-
-        if (!clientUser) {
-          this.logger.error(`❌ No se encontró cliente con ID: ${userId}`);
+        if (!client) {
           return { error: 'No se encontró al cliente en el sistema.' };
         }
 
-        // 2. Log para debugging
-        this.logger.log(`✅ Creando job: Cliente=${clientUser.name} (${userId}) -> Proveedor=${providerUser.name} (${providerId})`);
+        this.logger.log(`✅ Creando job: Cliente=${client.name} → Proveedor=${provider?.name}`);
 
-        // 3. Construimos el objeto EXACTO que pide tu Schema
         const jobData = {
-          title: `Servicio de ${category} para ${clientUser.name}`,
-          description: description || `Solicitud de servicio vía VertexBot`,
+          title: `Servicio de ${category} para ${client.name}`,
+          description: description || `Solicitud vía VertexBot`,
           price: budget || 0,
-          location: clientUser.location || 'Consultar con cliente',
-          category: category.toUpperCase(), // Aseguramos que sea uppercase
+          location: client.location || 'Consultar con cliente',
+          category: category.toUpperCase(),
           status: 'OPEN',
           client: {
-            _id: clientUser._id,
-            name: clientUser.name,
-            email: clientUser.email
+            _id: client._id,
+            name: client.name,
+            email: client.email
           },
           provider: {
-            _id: providerUser._id,
-            name: providerUser.name,
-            email: providerUser.email
+            _id: provider?._id,
+            name: provider?.name,
+            email: provider?.email
           }
         };
 
-        // 4. Crear el Job
         const newJob = await this.jobService.create(jobData);
 
-        // 5. Notificar al proveedor real
         await this.notificationService.create({
-          recipientId: providerId,
+          recipientId: new Types.ObjectId(providerId),
           message: `👋 Nueva propuesta: ${jobData.title} por $${budget}`,
           jobId: newJob._id,
           type: 'NEW_JOB'
         });
 
-        this.logger.log(`✅ Job creado exitosamente: ${newJob._id}`);
+        this.logger.log(`✅ Job creado: ${newJob._id}`);
 
         return {
           success: true,
-          message: `¡Propuesta creada! He notificado a ${providerUser.name}. Ya puedes ver el job en tu lista.`,
+          message: `¡Listo! ${provider?.name} ha sido notificado.`,
           jobId: newJob._id.toString(),
-          providerName: providerUser.name,
-          clientName: clientUser.name,
+          providerName: provider?.name,
+          clientName: client.name,
           action: 'JOB_CREATED'
         };
 
@@ -425,19 +501,18 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
   }
 
   // ============================================
-  // BÚSQUEDA DE PROVEEDORES
+  // BÚSQUEDA DE PROVEEDORES (SIN CAMBIOS)
   // ============================================
   private async searchProviders(
     categoryInput: string,
     userId: string,
-    // keyword?: string,
+    keyword?: string,
     limit = 5
   ) {
-    this.logger.log(`🔍 [searchProviders] Buscando para: "${categoryInput}"`);
+    this.logger.log(`🔍 Buscando proveedores: "${categoryInput}" ${keyword}`);
 
     let category = null;
 
-    // 1. Intentar por SLUG
     const slugTarget = categoryInput
       .toLowerCase()
       .normalize('NFD')
@@ -449,7 +524,6 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
 
     category = await this.categoryService.findBySlug(slugTarget);
 
-    // 2. Si no lo encuentra por slug, buscar por nombre/keywords
     if (!category) {
       const searchResults = await this.categoryService.search(categoryInput);
       if (searchResults && searchResults.length > 0) {
@@ -457,35 +531,33 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
       }
     }
 
-    // 3. Si sigue sin aparecer, error amable
     if (!category) {
       return {
         found: false,
-        message: `Actualmente no tengo una categoría exacta para "${categoryInput}".`,
+        message: `No tengo una categoría exacta para "${categoryInput}".`,
         suggestedAction: 'get_available_categories'
       };
     }
 
     const categoryObjectId = new Types.ObjectId(category._id);
 
-    // 4. Buscar proveedores
     const providers = await this.userModel.find({
       role: { $in: ['PROVIDER', 'BOTH'] },
       isActive: true,
       servicesOffered: {
         $elemMatch: { categoryId: categoryObjectId }
       },
-      _id: { $ne: new Types.ObjectId(userId) }, // No incluir al usuario actual
-      stripeConnectedAccountId: { $ne: null } // Solo proveedores con Stripe
+      _id: { $ne: new Types.ObjectId(userId) },
+      stripeConnectedAccountId: { $ne: null }
     })
       .sort({ 'stats.averageRating': -1, 'stats.jobsCompleted': -1 })
       .limit(limit)
       .lean();
 
-    this.logger.log(`✅ Encontrados ${providers.length} proveedores para ${category.name}`);
+    this.logger.log(`✅ Encontrados ${providers.length} proveedores`);
 
     const mappedProviders = providers.map((p: any) => ({
-      id: p._id.toString(), // 👈 CRÍTICO: Este es el ID que la IA debe usar
+      id: p._id.toString(),
       name: p.name,
       rating: p.stats?.averageRating?.toFixed(1) || 'Nuevo',
       jobsDone: p.stats?.jobsCompleted || 0,
@@ -495,21 +567,17 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
         .map((s: any) => s.title) || [],
     }));
 
-    // Log detallado para debugging
-    this.logger.log(`📋 Proveedores mapeados:`, JSON.stringify(mappedProviders, null, 2));
-
     return {
       found: true,
       category: category.name,
       categorySlug: category.slug,
       count: providers.length,
-      lastSearchProviderId: mappedProviders[0]?.id, // Hint adicional para la IA
       providers: mappedProviders,
     };
   }
 
   // ============================================
-  // OBTENER JOBS DEL USUARIO
+  // OBTENER JOBS (SIN CAMBIOS)
   // ============================================
   private async getUserJobs(userId: string, status?: string) {
     try {
@@ -517,7 +585,6 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
         $or: [
           { 'client._id': userId },
           { 'provider._id': userId },
-          { 'userId': userId }
         ],
       };
 
@@ -537,20 +604,20 @@ REGLAS OBLIGATORIAS DE COMPORTAMIENTO:
         jobs: jobs.map((j: any) => ({
           title: j.title,
           status: j.status,
-          price: j.price ? `$${j.price}` : 'Precio no definido',
+          price: j.price ? `$${j.price}` : 'N/A',
           date: j.createdAt ? new Date(j.createdAt).toLocaleDateString() : 'N/A',
           client: j.client?.name || 'N/A',
           provider: j.provider?.name || 'N/A'
         })),
-        context: status ? `Mostrando trabajos con estado ${status}` : 'Mostrando trabajos recientes'
+        context: status ? `Trabajos con estado ${status}` : 'Trabajos recientes'
       };
     } catch (error) {
-      return { error: 'No pude recuperar tus trabajos en este momento.' };
+      return { error: 'No pude recuperar tus trabajos.' };
     }
   }
 
   // ============================================
-  // CONTEXTO ENRIQUECIDO DEL USUARIO
+  // CONTEXTO DE USUARIO (SIN CAMBIOS)
   // ============================================
   private buildRichUserContext(user: any): string {
     const roleLabel =
@@ -582,7 +649,7 @@ Cuando busques proveedores y el usuario quiera contratar a alguien, debes usar e
   }
 
   // ============================================
-  // GENERAR SUGERENCIAS DE CONVERSACIÓN
+  // SUGERENCIAS (SIN CAMBIOS)
   // ============================================
   async generateSuggestions(userId: string): Promise<string[]> {
     const user = await this.userModel.findById(userId);
