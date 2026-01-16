@@ -4,7 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './user.schema';
 import { Job, JobDocument } from './job.schema';
-import {  GeneralStatsType } from './user-info-type';
+import { GeneralStatsType } from './user-info-type';
 import { Notification, NotificationDocument } from './notification.schema';
 @Injectable()
 export class AdminService {
@@ -14,12 +14,12 @@ export class AdminService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
     @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
-  ) {}
+  ) { }
 
   /**
    * 📊 OBTENER ESTADÍSTICAS GENERALES
    */
-async getGeneralStats(): Promise<GeneralStatsType> {  
+  async getGeneralStats(): Promise<GeneralStatsType> {
     try {
       const totalUsers = await this.userModel.countDocuments();
       const totalProviders = await this.userModel.countDocuments({ role: 'PROVIDER' });
@@ -108,8 +108,8 @@ async getGeneralStats(): Promise<GeneralStatsType> {
     try {
       const user = await this.userModel.findByIdAndUpdate(
         userId,
-        { 
-          $set: { 
+        {
+          $set: {
             isActive: false,
             suspensionReason: reason,
             suspendedAt: new Date()
@@ -137,8 +137,8 @@ async getGeneralStats(): Promise<GeneralStatsType> {
     try {
       const user = await this.userModel.findByIdAndUpdate(
         userId,
-        { 
-          $set: { 
+        {
+          $set: {
             isActive: true,
             suspensionReason: null,
             suspendedAt: null
@@ -166,8 +166,8 @@ async getGeneralStats(): Promise<GeneralStatsType> {
     try {
       const user = await this.userModel.findByIdAndUpdate(
         userId,
-        { 
-          $set: { 
+        {
+          $set: {
             isActive: false,
             isBanned: true,
             banReason: reason,
@@ -201,7 +201,7 @@ async getGeneralStats(): Promise<GeneralStatsType> {
   async changeUserRole(userId: string, newRole: string): Promise<{ success: boolean; message: string }> {
     try {
       const validRoles = ['ADMIN', 'PROVIDER', 'CLIENT', 'BOTH'];
-      
+
       if (!validRoles.includes(newRole)) {
         throw new BadRequestException(`Rol inválido: ${newRole}`);
       }
@@ -236,7 +236,7 @@ async getGeneralStats(): Promise<GeneralStatsType> {
       // Aquí guardas en la base de datos o en variables globales
       // Por ahora solo retornamos el valor
       this.logger.log(`Platform fee updated to ${percentage}%`);
-      
+
       return { success: true, newPercentage: percentage };
     } catch (error) {
       this.logger.error('Error updating platform fee:', error);
@@ -260,8 +260,8 @@ async getGeneralStats(): Promise<GeneralStatsType> {
       // Marcar job como reembolsado
       await this.jobModel.findByIdAndUpdate(
         jobId,
-        { 
-          $set: { 
+        {
+          $set: {
             status: 'REFUNDED',
             'payment.status': 'REFUNDED',
             refundReason: reason,
@@ -272,10 +272,10 @@ async getGeneralStats(): Promise<GeneralStatsType> {
 
       this.logger.warn(`Force refund executed for job ${jobId}. Amount: $${refundAmount}. Reason: ${reason}`);
 
-      return { 
-        success: true, 
-        refundAmount, 
-        message: `Reembolso forzado de $${refundAmount} procesado` 
+      return {
+        success: true,
+        refundAmount,
+        message: `Reembolso forzado de $${refundAmount} procesado`
       };
     } catch (error) {
       this.logger.error('Error forcing refund:', error);
@@ -295,9 +295,9 @@ async getGeneralStats(): Promise<GeneralStatsType> {
       // TODO: Implementar cuando tengas el schema de Disputes
       this.logger.log(`Dispute ${disputeId} resolved with resolution: ${resolution}, amount: $${amount}`);
 
-      return { 
-        success: true, 
-        message: `Disputa resuelta con resolución: ${resolution}` 
+      return {
+        success: true,
+        message: `Disputa resuelta con resolución: ${resolution}`
       };
     } catch (error) {
       this.logger.error('Error resolving dispute:', error);
@@ -305,47 +305,45 @@ async getGeneralStats(): Promise<GeneralStatsType> {
     }
   }
 
+
   /**
    * 📢 CREAR ALERTA DEL SISTEMA
    */
-/**
- * 📢 CREAR ALERTA DEL SISTEMA
- */
-async createSystemAlert(
-  title: string,
-  message: string,
-  severity: string
-): Promise<{ success: boolean; message: string }> {
-  try {
-    this.logger.warn(`System Alert created. Severity: ${severity}. Title: ${title}`);
+  async createSystemAlert(
+    title: string,
+    message: string,
+    severity: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      this.logger.warn(`System Alert created. Severity: ${severity}. Title: ${title}`);
 
-    // 🔔 CREAR NOTIFICACIÓN PARA TODOS LOS USUARIOS ACTIVOS
-    const activeUsers = await this.userModel.find({ isActive: true }).select('_id').exec();
-    
-    const notifications = activeUsers.map(user => ({
-      userId: user._id,
-      type: 'SYSTEM_ALERT',
-      message: `${title}: ${message}`,
-      severity: severity,
-      isRead: false,
-      createdAt: new Date()
-    }));
+      // 🔔 CREAR NOTIFICACIÓN PARA TODOS LOS USUARIOS ACTIVOS
+      const activeUsers = await this.userModel.find({ isActive: true }).select('_id').exec();
 
-    // Insertar todas las notificaciones de una vez
-    if (notifications.length > 0) {
-      await this.notificationModel.insertMany(notifications);
-      this.logger.log(`✅ ${notifications.length} notificaciones de alerta creadas`);
+      const notifications = activeUsers.map(user => ({
+        recipientId: user._id, // 👈 CAMBIO: userId → recipientId
+        type: 'SYSTEM_ALERT',
+        message: `${title}: ${message}`,
+        severity: severity,
+        isRead: false,
+        createdAt: new Date()
+      }));
+
+      // Insertar todas las notificaciones de una vez
+      if (notifications.length > 0) {
+        await this.notificationModel.insertMany(notifications);
+        this.logger.log(`✅ ${notifications.length} notificaciones de alerta creadas`);
+      }
+
+      return {
+        success: true,
+        message: `Alerta enviada a ${notifications.length} usuarios activos`
+      };
+    } catch (error) {
+      this.logger.error('Error creating system alert:', error);
+      throw new BadRequestException('Error al crear alerta del sistema');
     }
-
-    return { 
-      success: true, 
-      message: `Alerta enviada a ${notifications.length} usuarios activos` 
-    };
-  } catch (error) {
-    this.logger.error('Error creating system alert:', error);
-    throw new BadRequestException('Error al crear alerta del sistema');
   }
-}
 
   /**
    * 📋 OBTENER LOGS DEL SISTEMA
