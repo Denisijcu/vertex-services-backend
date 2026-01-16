@@ -131,8 +131,6 @@ class UserInfo {
 // RESPUESTAS
 // ============================================
 
-
-
 @ObjectType()
 class LoginResponse {
   @Field({ nullable: true })
@@ -189,6 +187,10 @@ class RegisterInput {
 
   @Field({ nullable: true, defaultValue: false })
   termsAccepted?: boolean;
+
+  // 🔐 NUEVO: Para Post-Quantum
+  @Field({ nullable: true, defaultValue: false })
+  useQuantumSafe?: boolean;
 }
 
 @InputType()
@@ -239,6 +241,62 @@ class BiometricCredentialDescriptor {
   type: string;
 }
 
+// 🔐 NUEVO: Inputs para Post-Quantum
+@InputType()
+class ChangePasswordInput {
+  @Field()
+  currentPassword: string;
+
+  @Field()
+  newPassword: string;
+
+  @Field({ nullable: true, defaultValue: false })
+  useQuantumSafe?: boolean;
+}
+
+// 🔐 NUEVO: Response para migración
+@ObjectType()
+class QuantumMigrationResponse {
+  @Field()
+  message: string;
+
+  @Field({ nullable: true })
+  alreadyQuantumSafe?: boolean;
+
+  @Field({ nullable: true })
+  quantumSafe?: boolean;
+
+  @Field({ nullable: true })
+  migratedAt?: string;
+}
+
+// 🔐 NUEVO: Response para info de seguridad
+@ObjectType()
+class SecurityInfoResponse {
+  @Field()
+  email: string;
+
+  @Field()
+  quantumSafeEnabled: boolean;
+
+  @Field()
+  cryptoAlgorithm: string;
+
+  @Field({ nullable: true })
+  passwordChangedAt?: string;
+
+  @Field({ nullable: true })
+  lastLogin?: string;
+
+  @Field()
+  lastLoginQuantumSafe: boolean;
+
+  @Field()
+  twoFactorEnabled: boolean;
+
+  @Field()
+  biometricEnabled: boolean;
+}
 
 // ============================================
 // RESOLVER
@@ -251,7 +309,7 @@ export class AuthResolver {
   // ============================================
   // REGISTRO
   // ============================================
-   @Mutation(() => MessageResponse)
+  @Mutation(() => MessageResponse)
   async register(@Args('input') input: RegisterInput) {
     try {
       console.log('📝 Register input received:', input);
@@ -260,7 +318,8 @@ export class AuthResolver {
         input.password,
         input.name,
         input.role,
-        input.termsAccepted
+        input.termsAccepted,
+        input.useQuantumSafe // 🔐 NUEVO: Pasar parámetro quantum
       );
       return result;
     } catch (error: any) {
@@ -275,7 +334,7 @@ export class AuthResolver {
   // ============================================
   // LOGIN
   // ============================================
-   @Mutation(() => LoginResponse)
+  @Mutation(() => LoginResponse)
   async login(@Args('input') input: LoginInput) {
     try {
       console.log('🔐 Login attempt:', input.email);
@@ -371,7 +430,6 @@ export class AuthResolver {
     };
   }
 
-
   // ============================================
   // BIOMETRÍA: GENERAR DESAFÍO
   // ============================================
@@ -400,6 +458,89 @@ export class AuthResolver {
     } catch (error: any) {
       console.error('❌ Biometric Verify Error:', error.message);
       throw new BadRequestException('Fallo en la verificación de identidad');
+    }
+  }
+
+  // ============================================
+  // 🔐 POST-QUANTUM: MIGRAR CUENTA
+  // ============================================
+  @Mutation(() => QuantumMigrationResponse)
+  @UseGuards(GqlAuthGuard)
+  async migrateToQuantumSafe(
+    @CurrentUser() user: any,
+    @Args('currentPassword') currentPassword: string
+  ) {
+    try {
+      console.log('🔄 Migrando usuario a Post-Quantum:', user.email);
+      const result = await this.authService.migrateToQuantumSafe(
+        user._id,
+        currentPassword
+      );
+      return {
+        ...result,
+        migratedAt: result.migratedAt?.toISOString()
+      };
+    } catch (error: any) {
+      console.error('❌ Migration error:', error?.message);
+      throw new BadRequestException(error?.message || 'Migration failed');
+    }
+  }
+
+  // ============================================
+  // 🔐 POST-QUANTUM: CAMBIAR CONTRASEÑA
+  // ============================================
+  @Mutation(() => MessageResponse)
+  @UseGuards(GqlAuthGuard)
+  async changePassword(
+    @CurrentUser() user: any,
+    @Args('input') input: ChangePasswordInput
+  ) {
+    try {
+      console.log('🔑 Cambiando contraseña para:', user.email);
+      const result = await this.authService.changePassword(
+        user._id,
+        input.currentPassword,
+        input.newPassword,
+        input.useQuantumSafe
+      );
+      return {
+        message: result.message
+      };
+    } catch (error: any) {
+      console.error('❌ Change password error:', error?.message);
+      throw new BadRequestException(error?.message || 'Password change failed');
+    }
+  }
+
+  // ============================================
+  // 🔐 POST-QUANTUM: INFO DE SEGURIDAD
+  // ============================================
+  @Query(() => SecurityInfoResponse)
+  @UseGuards(GqlAuthGuard)
+  async mySecurityInfo(@CurrentUser() user: any) {
+    try {
+      console.log('🔍 Obteniendo info de seguridad para:', user.email);
+      
+      // Obtener usuario completo con info de crypto
+      const fullUser = await this.authService.findOneById(user._id);
+      
+      if (!fullUser) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+
+      return {
+        email: fullUser.email,
+        quantumSafeEnabled: fullUser.quantumSafeEnabled || false,
+        cryptoAlgorithm: fullUser.cryptoAlgorithm || 'bcrypt',
+        passwordChangedAt: fullUser.passwordChangedAt?.toISOString(),
+        lastLogin: fullUser.lastLogin?.toISOString(),
+        lastLoginQuantumSafe: fullUser.lastLoginQuantumSafe || false,
+        twoFactorEnabled: fullUser.twoFactorAuth?.enabled || false,
+        biometricEnabled: fullUser.securitySettings?.biometricEnabled || false
+      };
+    } catch (error: any) {
+      console.error('❌ Security info error:', error?.message);
+      throw new BadRequestException(error?.message || 'Failed to get security info');
     }
   }
 }
