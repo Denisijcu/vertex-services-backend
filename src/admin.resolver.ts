@@ -1,8 +1,18 @@
-import { Resolver, Mutation, Args, Query } from '@nestjs/graphql';
+import { Resolver, Mutation, Args, Query, ObjectType, Field } from '@nestjs/graphql';
 import { UserService } from './auth/user.service';
 import { UserInfoType, GeneralStatsType } from './user-info-type';
 import { UserRole, UserDocument } from './user.schema';
 import { AdminService } from './admin.service';
+
+
+@ObjectType()
+class SystemAlertResponse {
+  @Field()
+  success: boolean;
+
+  @Field()
+  message: string;
+}
 
 @Resolver()
 export class AdminResolver {
@@ -73,5 +83,17 @@ private mapToUserInfo(userDoc: UserDocument): UserInfoType {
 @Query(() => GeneralStatsType)  // ✅ CORRECTO
 async getGeneralStats(): Promise<GeneralStatsType> {
   return this.adminService.getGeneralStats();
+}
+// ============================================
+// 📢 CREAR ALERTA DEL SISTEMA
+// ============================================
+@Mutation(() => SystemAlertResponse)
+async createSystemAlert(
+  @Args('title') title: string,
+  @Args('message') message: string,
+  @Args('severity') severity: string
+): Promise<SystemAlertResponse> {
+  console.log('📢 Creando alerta del sistema:', { title, message, severity });
+  return this.adminService.createSystemAlert(title, message, severity);
 }
 }
