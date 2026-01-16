@@ -3,8 +3,11 @@ import { UserService } from './auth/user.service';
 import { UserInfoType, GeneralStatsType } from './user-info-type';
 import { UserRole, UserDocument } from './user.schema';
 import { AdminService } from './admin.service';
+import { JobInfoType } from './job-info-type';
 
-
+// ============================================
+// RESPONSE TYPES
+// ============================================
 @ObjectType()
 class SystemAlertResponse {
   @Field()
@@ -14,39 +17,82 @@ class SystemAlertResponse {
   message: string;
 }
 
+@ObjectType()
+class AdminActionResponse {
+  @Field()
+  success: boolean;
+
+  @Field()
+  message: string;
+}
+
 @Resolver()
 export class AdminResolver {
-  constructor(private readonly userService: UserService, private readonly adminService: AdminService) {}
+  constructor(
+    private readonly userService: UserService, 
+    private readonly adminService: AdminService
+  ) {}
 
   // ============================================
   // Helper para mapear UserDocument -> UserInfoType
   // ============================================
-private mapToUserInfo(userDoc: UserDocument): UserInfoType {
-  return {
-    _id: userDoc._id.toString(),
-    name: userDoc.name,
-    email: userDoc.email,
-    role: userDoc.role,
-    isActive: userDoc.isActive,
-    avatar: userDoc.avatar,
-    bio: userDoc.bio,
-    phone: userDoc.phone,
-    location: userDoc.location,
-    stripeAccountComplete: (userDoc as any).stripeAccountComplete || false,
-    stats: {
-      jobsCompleted: userDoc.stats?.jobsCompleted || 0,
-      totalEarned: userDoc.stats?.totalEarned || 0,
-      averageRating: userDoc.stats?.averageRating || 0,
-      totalReviews: userDoc.stats?.totalReviews || 0,
-    },
-    createdAt: (userDoc as any).createdAt?.toString() || new Date().toISOString(),
-    lastLogin: (userDoc as any).lastLogin?.toString() || null,
-  };
-}
+  private mapToUserInfo(userDoc: UserDocument): UserInfoType {
+    return {
+      _id: userDoc._id.toString(),
+      name: userDoc.name,
+      email: userDoc.email,
+      role: userDoc.role,
+      isActive: userDoc.isActive,
+      avatar: userDoc.avatar,
+      bio: userDoc.bio,
+      phone: userDoc.phone,
+      location: userDoc.location,
+      stripeAccountComplete: (userDoc as any).stripeAccountComplete || false,
+      stats: {
+        jobsCompleted: userDoc.stats?.jobsCompleted || 0,
+        totalEarned: userDoc.stats?.totalEarned || 0,
+        averageRating: userDoc.stats?.averageRating || 0,
+        totalReviews: userDoc.stats?.totalReviews || 0,
+      },
+      createdAt: (userDoc as any).createdAt?.toString() || new Date().toISOString(),
+      lastLogin: (userDoc as any).lastLogin?.toString() || null,
+    };
+  }
 
   // ============================================
-  // Activar / Desactivar usuario
+  // QUERIES
   // ============================================
+
+  @Query(() => [UserInfoType])
+  async findAllUsers(): Promise<UserInfoType[]> {
+    const users = await this.adminService.findAllUsers();
+    return users.map(u => this.mapToUserInfo(u));
+  }
+
+  @Query(() => GeneralStatsType)
+  async getGeneralStats(): Promise<GeneralStatsType> {
+    return this.adminService.getGeneralStats();
+  }
+
+  @Query(() => [JobInfoType])
+  async getAllJobs(): Promise<any[]> {
+    return this.adminService.getAllJobs();
+  }
+
+  @Query(() => [String])
+  async getDisputes(): Promise<any[]> {
+    return this.adminService.getDisputes();
+  }
+
+  @Query(() => [String])
+  async getSystemLogs(@Args('limit', { nullable: true }) limit?: number): Promise<any[]> {
+    return this.adminService.getSystemLogs(limit || 50);
+  }
+
+  // ============================================
+  // MUTATIONS - USER MANAGEMENT
+  // ============================================
+
   @Mutation(() => UserInfoType)
   async toggleUserStatus(
     @Args('userId') userId: string,
@@ -56,9 +102,6 @@ private mapToUserInfo(userDoc: UserDocument): UserInfoType {
     return this.mapToUserInfo(userDoc);
   }
 
-  // ============================================
-  // Cambiar rol de usuario
-  // ============================================
   @Mutation(() => UserInfoType)
   async changeUserRole(
     @Args('userId') userId: string,
@@ -68,32 +111,38 @@ private mapToUserInfo(userDoc: UserDocument): UserInfoType {
     return this.mapToUserInfo(userDoc);
   }
 
-  // ============================================
-  // Obtener todos los usuarios
-  // ============================================
-  @Query(() => [UserInfoType])
-  async findAllUsers(): Promise<UserInfoType[]> {
-    const { users } = await this.userService.findAll();
-    return users.map(u => this.mapToUserInfo(u));
+  @Mutation(() => AdminActionResponse)
+  async suspendUser(
+    @Args('userId') userId: string,
+    @Args('reason') reason: string
+  ): Promise<AdminActionResponse> {
+    return this.adminService.suspendUser(userId, reason);
+  }
+
+  @Mutation(() => AdminActionResponse)
+  async restoreUser(@Args('userId') userId: string): Promise<AdminActionResponse> {
+    return this.adminService.restoreUser(userId);
+  }
+
+  @Mutation(() => AdminActionResponse)
+  async banUser(
+    @Args('userId') userId: string,
+    @Args('reason') reason: string
+  ): Promise<AdminActionResponse> {
+    return this.adminService.banUser(userId, reason);
   }
 
   // ============================================
-  // Estadísticas generales
+  // 📢 MUTATION - SYSTEM ALERTS
   // ============================================
-@Query(() => GeneralStatsType)  // ✅ CORRECTO
-async getGeneralStats(): Promise<GeneralStatsType> {
-  return this.adminService.getGeneralStats();
-}
-// ============================================
-// 📢 CREAR ALERTA DEL SISTEMA
-// ============================================
-@Mutation(() => SystemAlertResponse)
-async createSystemAlert(
-  @Args('title') title: string,
-  @Args('message') message: string,
-  @Args('severity') severity: string
-): Promise<SystemAlertResponse> {
-  console.log('📢 Creando alerta del sistema:', { title, message, severity });
-  return this.adminService.createSystemAlert(title, message, severity);
-}
+
+  @Mutation(() => SystemAlertResponse)
+  async createSystemAlert(
+    @Args('title') title: string,
+    @Args('message') message: string,
+    @Args('severity') severity: string
+  ): Promise<SystemAlertResponse> {
+    console.log('📢 Admin creando alerta del sistema:', { title, message, severity });
+    return this.adminService.createSystemAlert(title, message, severity);
+  }
 }
