@@ -5,7 +5,7 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from './user.schema';
 import { Job, JobDocument } from './job.schema';
 import {  GeneralStatsType } from './user-info-type';
-
+import { Notification, NotificationDocument } from './notification.schema';
 @Injectable()
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
@@ -13,6 +13,7 @@ export class AdminService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Job.name) private jobModel: Model<JobDocument>,
+    @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
   ) {}
 
   /**
@@ -307,24 +308,44 @@ async getGeneralStats(): Promise<GeneralStatsType> {
   /**
    * 📢 CREAR ALERTA DEL SISTEMA
    */
-  async createSystemAlert(
-    title: string,
-    message: string,
-    severity: string
-  ): Promise<{ success: boolean; message: string }> {
-    try {
-      // TODO: Crear schema de SystemAlert
-      this.logger.warn(`System Alert created. Severity: ${severity}. Title: ${title} Message: ${message}`);
+/**
+ * 📢 CREAR ALERTA DEL SISTEMA
+ */
+async createSystemAlert(
+  title: string,
+  message: string,
+  severity: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    this.logger.warn(`System Alert created. Severity: ${severity}. Title: ${title}`);
 
-      return { 
-        success: true, 
-        message: `Alerta del sistema creada: ${title}` 
-      };
-    } catch (error) {
-      this.logger.error('Error creating system alert:', error);
-      throw new BadRequestException('Error al crear alerta del sistema');
+    // 🔔 CREAR NOTIFICACIÓN PARA TODOS LOS USUARIOS ACTIVOS
+    const activeUsers = await this.userModel.find({ isActive: true }).select('_id').exec();
+    
+    const notifications = activeUsers.map(user => ({
+      userId: user._id,
+      type: 'SYSTEM_ALERT',
+      message: `${title}: ${message}`,
+      severity: severity,
+      isRead: false,
+      createdAt: new Date()
+    }));
+
+    // Insertar todas las notificaciones de una vez
+    if (notifications.length > 0) {
+      await this.notificationModel.insertMany(notifications);
+      this.logger.log(`✅ ${notifications.length} notificaciones de alerta creadas`);
     }
+
+    return { 
+      success: true, 
+      message: `Alerta enviada a ${notifications.length} usuarios activos` 
+    };
+  } catch (error) {
+    this.logger.error('Error creating system alert:', error);
+    throw new BadRequestException('Error al crear alerta del sistema');
   }
+}
 
   /**
    * 📋 OBTENER LOGS DEL SISTEMA
