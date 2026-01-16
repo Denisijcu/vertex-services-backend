@@ -41,8 +41,10 @@ import { Job, JobSchema } from './job.schema';
       csrfPrevention: false,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
-      playground: process.env.NODE_ENV !== 'production',
-      introspection: process.env.NODE_ENV !== 'production',
+      //playground: process.env.NODE_ENV !== 'production',
+      //introspection: process.env.NODE_ENV !== 'production',
+      playground: true,
+      introspection: true,
       
       // 🔥 CORRECCIÓN CLAVE: Context mejorado
       context: ({ req, res }: { req: any; res: any }) => {
