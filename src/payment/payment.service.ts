@@ -355,6 +355,8 @@ export class PaymentService {
 
 
 
+
+
     /**
  * Crear cuenta conectada de Stripe para provider
  */
@@ -386,8 +388,8 @@ export class PaymentService {
     async getStripeConnectOnboardingLink(userId: string): Promise<string> {
         const accountId = await this.createStripeConnectedAccount(userId);
 
-        const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:4200'}/payments?onboarding=success`;
-        const refreshUrl = `${process.env.FRONTEND_URL || 'http://localhost:4200'}/payments?onboarding=refresh`;
+        const returnUrl = 'https://vertex-services.netlify.app/settings?onboarding=success';
+        const refreshUrl = 'https://vertex-services.netlify.app/settings?onboarding=refresh';
 
         const accountLink = await this.stripeConnectService.createAccountLink(
             accountId,
