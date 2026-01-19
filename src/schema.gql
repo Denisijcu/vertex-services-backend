@@ -1,0 +1,815 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AdminActionResponse {
+  message: String!
+  success: Boolean!
+}
+
+type BiometricChallengeResponse {
+  allowCredentials: [BiometricCredentialDescriptor!]!
+  challenge: String!
+}
+
+type BiometricCredentialDescriptor {
+  id: String!
+  type: String!
+}
+
+type BotResponse {
+  functionCalled: [String!]
+  functionResult: String
+  message: String!
+  timestamp: String!
+}
+
+type Category {
+  _id: ID!
+  color: String!
+  createdAt: DateTime!
+  description: String
+  icon: String!
+  isActive: Boolean!
+  jobsCount: Float!
+  keywords: [String!]!
+  name: String!
+  order: Float!
+  parentCategory: ID
+  providersCount: Float!
+  skills: [String!]!
+  slug: String!
+  updatedAt: DateTime!
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+  useQuantumSafe: Boolean = false
+}
+
+type ChatFileMetadata {
+  duration: Float
+  mimeType: String
+  originalName: String
+  size: Float
+  thumbnail: String
+}
+
+input ChatInput {
+  history: [ConversationMessageInput!]
+  message: String!
+}
+
+type ChatMessage {
+  _id: ID!
+  content: String!
+  createdAt: DateTime!
+  fileMetadata: ChatFileMetadata
+  fileUrl: String
+  isRead: Boolean!
+  jobId: ID!
+  senderAvatar: String
+  senderId: ID!
+  senderName: String!
+  type: String!
+  updatedAt: DateTime!
+}
+
+type ChatRoom {
+  _id: ID!
+  createdAt: DateTime!
+  jobId: ID!
+  jobTitle: String!
+  lastMessage: LastMessageInfo
+  participants: [Participant!]!
+  updatedAt: DateTime!
+}
+
+type Comment {
+  authorId: String
+  authorName: String
+  avatar: String
+  content: String
+  createdAt: DateTime
+}
+
+input ConversationMessageInput {
+  content: String!
+  role: String!
+}
+
+input CreateCategoryInput {
+  color: String
+  description: String
+  icon: String!
+  keywords: [String!]
+  name: String!
+  order: Float
+  parentCategory: String
+  skills: [String!]
+}
+
+input CreateJobInput {
+  category: String!
+  description: String!
+  location: String!
+  price: Float!
+  title: String!
+}
+
+input CreateJobInputData {
+  category: String!
+  description: String!
+  location: String!
+  price: Float!
+  providerId: ID!
+  title: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+input ForgotPasswordInput {
+  email: String!
+}
+
+type GeneralStatsType {
+  activeUsers: Float!
+  cancelledJobs: Float!
+  completedJobs: Float!
+  disputesCount: Float!
+  inEscrow: Float!
+  pendingPayments: Float!
+  totalClients: Float!
+  totalEarnings: Float!
+  totalProviders: Float!
+  totalUsers: Float!
+}
+
+type Job {
+  _id: ID!
+  acceptedAt: DateTime
+  cancellationReason: String
+  cancelledAt: DateTime
+  category: ServiceCategory!
+  client: JobUserInfo!
+  clientReview: Review
+  completedAt: DateTime
+  deadline: DateTime
+  description: String!
+  images: [String]!
+  location: String!
+  messages: [Message]!
+  payment: Payment
+  price: Float!
+  provider: JobUserInfo
+  providerReview: Review
+  status: JobStatus!
+  tags: [String]!
+  title: String!
+  views: Float!
+}
+
+enum JobStatus {
+  CANCELLED
+  COMPLETED
+  DISPUTED
+  IN_PROGRESS
+  OPEN
+  PENDING_PAYMENT
+}
+
+type JobType {
+  _id: ID!
+  acceptedAt: String
+  category: String!
+  client: UserType
+  completedAt: String
+  createdAt: String!
+  description: String!
+  location: String!
+  price: Float!
+  provider: UserType
+  status: String!
+  title: String!
+}
+
+type JobUserInfo {
+  _id: ID!
+  avatar: String
+  bio: String
+  client: String
+  email: String!
+  name: String!
+  provider: String
+}
+
+type LastMessageInfo {
+  content: String!
+  createdAt: DateTime!
+  isRead: Boolean!
+  senderName: String!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+  twoFactorCode: String
+}
+
+type LoginResponse {
+  access_token: String
+  message: String
+  requiresTwoFactor: Boolean
+  user: UserInfo
+}
+
+type Message {
+  senderId: ID!
+  senderName: String!
+  text: String!
+  timestamp: DateTime!
+}
+
+type MessageResponse {
+  emailVerificationToken: String
+  message: String!
+}
+
+type Mutation {
+  """Aceptar un trabajo disponible"""
+  acceptJob(id: String!): JobType!
+  addComment(authorId: String!, authorName: String!, avatar: String, content: String!, pulseId: String!): PulsePost!
+
+  """Agregar servicio ofrecido"""
+  addService(input: ServiceInput!): UserProfileType!
+
+  """Agregar imagen a galería"""
+  addToGallery(imageUrl: String!): UserProfileType!
+  banUser(reason: String!, userId: String!): AdminActionResponse!
+
+  """Cancelar un trabajo"""
+  cancelJob(id: String!): JobType!
+  changePassword(input: ChangePasswordInput!): MessageResponse!
+  changeUserRole(newRole: String!, userId: String!): UserInfoType!
+  chatWithBot(input: ChatInput!): BotResponse!
+
+  """Completar un trabajo"""
+  completeJob(id: String!): JobType!
+  confirm2FA(input: TwoFactorCodeInput!): MessageResponse!
+  createCategory(input: CreateCategoryInput!): Category!
+
+  """Crear un nuevo trabajo"""
+  createJob(input: CreateJobInput!): JobType!
+  createJobPayment(jobId: ID!): Transaction!
+  createPulsePost(authorId: String!, authorName: String, avatar: String, content: String!, mediaType: String, mediaUrl: String): PulsePost!
+  createServiceRequest(input: CreateJobInputData!): Job!
+  createSystemAlert(message: String!, severity: String!, title: String!): SystemAlertResponse!
+  deleteAISettings: Boolean!
+  deleteCategory(id: String!): Boolean!
+  deleteChat(jobId: ID!): Boolean!
+  deleteChatMessages(jobId: ID!): Boolean!
+  deleteMessage(messageId: ID!): Boolean!
+  deletePulsePost(pulseId: String!): Boolean!
+  disable2FA(input: TwoFactorCodeInput!): MessageResponse!
+  disableBiometric: User!
+  enable2FA: TwoFactorSetupResponse!
+  enableBiometric(publicKey: String!): User!
+  forceSeed: Boolean!
+  forgotPassword(input: ForgotPasswordInput!): MessageResponse!
+  getBiometricChallenge(email: String!): BiometricChallengeResponse!
+  getStripeConnectOnboardingLink: String!
+  getStripeOnboardingLink: String!
+  login(input: LoginInput!): LoginResponse!
+  markMessagesAsRead(jobId: ID!): Boolean!
+  markNotificationAsRead(id: String!): Boolean!
+  migrateToQuantumSafe(currentPassword: String!): QuantumMigrationResponse!
+  refundPayment(jobId: ID!, reason: String): RefundResponse!
+  register(input: RegisterInput!): MessageResponse!
+  releasePayment(jobId: ID!): Transaction!
+
+  """Eliminar imagen de galería"""
+  removeFromGallery(imageUrl: String!): UserProfileType!
+
+  """Eliminar servicio ofrecido"""
+  removeService(serviceTitle: String!): UserProfileType!
+  reorderCategories(orders: [String!]!): Boolean!
+  resetToDefaultSettings: Settings!
+  restoreUser(userId: String!): AdminActionResponse!
+  sendFileMessage(input: SendFileMessageInput!): ChatMessage!
+  sendMessage(input: SendMessageInput!): ChatMessage!
+  suspendUser(reason: String!, userId: String!): AdminActionResponse!
+  toggleLike(pulseId: String!, userId: String!): PulsePost!
+  toggleUserStatus(isActive: Boolean!, userId: String!): UserInfoType!
+  updateAISettings(key: String, model: String!, provider: String!, url: String!): Settings!
+  updateCategory(id: String!, input: UpdateCategoryInput!): Category!
+  updateGallery(urls: [String!]!): User!
+  updateJobStatus(jobId: ID!, status: String!): Job!
+  updateProfessionalProfile(input: UpdateProfessionalProfileInput!): User!
+
+  """Actualizar perfil de usuario"""
+  updateProfile(input: UpdateProfileInput!): UserProfileType!
+
+  """Actualizar redes sociales"""
+  updateSocialLinks(input: SocialLinksInput!): UserProfileType!
+  verifyBiometricLogin(assertion: String!, email: String!): LoginResponse!
+  verifyEmail(input: VerifyEmailInput!): MessageResponse!
+  vertexCleanStats: String!
+  withdrawFunds(amount: Float!): Transaction!
+}
+
+type Notification {
+  _id: ID!
+  createdAt: DateTime
+  isRead: Boolean!
+  jobId: ID
+  message: String!
+  recipientId: ID!
+  severity: String
+  type: String
+}
+
+type Participant {
+  _id: ID!
+  avatar: String
+  name: String!
+  role: String!
+  unreadCount: Float!
+}
+
+type Payment {
+  amount: Float!
+  paidAt: DateTime
+  refundedAt: DateTime
+  status: PaymentStatus!
+  stripeChargeId: String
+  stripePaymentIntentId: String
+}
+
+enum PaymentStatus {
+  FAILED
+  PAID
+  PENDING
+  REFUNDED
+}
+
+type PulsePost {
+  authorId: String!
+  authorName: String
+  avatar: String
+  category: String
+  comments: [Comment!]!
+  content: String!
+  createdAt: DateTime!
+  imageUrl: String
+  likes: [String!]!
+  mediaType: String
+  mediaUrl: String
+  pulseId: ID!
+}
+
+type QuantumMigrationResponse {
+  alreadyQuantumSafe: Boolean
+  message: String!
+  migratedAt: String
+  quantumSafe: Boolean
+}
+
+type Query {
+  findAllUsers: [UserInfoType!]!
+  getAISettings: Settings
+  getAllJobs: [Job!]!
+  getBotSuggestions: SuggestionsResponse!
+
+  """Obtener todas las categorías activas"""
+  getCategories(activeOnly: Boolean! = true): [Category!]!
+
+  """Obtener categoría por ID o slug"""
+  getCategory(id: String, slug: String): Category
+  getChatMessages(jobId: ID!): [ChatMessage!]!
+  getDisputes: [String!]!
+  getGeneralStats: GeneralStatsType!
+  getMyChats: [ChatRoom!]!
+  getMyClientJobs: [Job!]!
+  getMyNotifications: [Notification!]!
+  getMyProviderJobs: [Job!]!
+  getMyTransactions(limit: Int = 50, offset: Int = 0): [Transaction!]!
+  getMyWallet: Wallet!
+
+  """Obtener categorías populares"""
+  getPopularCategories(limit: Float! = 6): [Category!]!
+  getProviders(categoryId: String, search: String): [User!]!
+  getPulsePosts(categoryId: String, limit: Int, skip: Int): [PulsePost!]!
+  getStripeAccountStatus: String!
+  getSystemLogs(limit: Float): [String!]!
+  getUserProfile(userId: ID): User
+
+  """Obtener un trabajo por ID"""
+  job(id: String!): JobType
+
+  """Obtener todos los trabajos"""
+  jobs(category: String, status: String): [JobType]!
+  me: UserInfo!
+  myJobs: [Job!]!
+
+  """Obtener mis trabajos como cliente"""
+  myJobsAsClient: [JobType]!
+
+  """Obtener mis trabajos como proveedor"""
+  myJobsAsProvider: [JobType]!
+  mySecurityInfo: SecurityInfoResponse!
+
+  """Buscar proveedores de servicios"""
+  providers(category: String, location: String, minRating: Float, search: String): [UserProfileType]!
+
+  """Buscar categorías por término"""
+  searchCategories(term: String!): [Category!]!
+
+  """Ver perfil de un usuario"""
+  userProfile(id: String!): UserProfileType
+}
+
+type RefundResponse {
+  estimatedArrival: String!
+  message: String!
+  refundAmount: Float!
+  refundId: String!
+  refundPercentage: Float!
+  success: Boolean!
+  transactionId: String!
+}
+
+input RegisterInput {
+  email: String!
+  name: String!
+  password: String!
+  role: String
+  termsAccepted: Boolean = false
+  useQuantumSafe: Boolean = false
+}
+
+type Review {
+  comment: String
+  createdAt: DateTime!
+  rating: Float!
+  reviewerId: ID!
+  reviewerName: String!
+}
+
+type SecurityInfoResponse {
+  biometricEnabled: Boolean!
+  cryptoAlgorithm: String!
+  email: String!
+  lastLogin: String
+  lastLoginQuantumSafe: Boolean!
+  passwordChangedAt: String
+  quantumSafeEnabled: Boolean!
+  twoFactorEnabled: Boolean!
+}
+
+input SendFileMessageInput {
+  content: String
+  fileUrl: String!
+  jobId: ID!
+  type: String!
+}
+
+input SendMessageInput {
+  content: String!
+  jobId: String!
+  type: String! = "text"
+}
+
+enum ServiceCategory {
+  ASSEMBLY
+  CLEANING
+  CONSULTING
+  DESIGN
+  MAINTENANCE
+  OTHER
+  REPAIR
+  TECHNICAL_SUPPORT
+  TRAINING
+  TRANSPORTATION
+}
+
+input ServiceInput {
+  category: String!
+  description: String!
+  pricePerHour: Float!
+  title: String!
+}
+
+input ServiceOfferInput {
+  categoryId: ID!
+  description: String
+  pricePerHour: Float!
+  title: String!
+}
+
+type ServiceOffered {
+  category: String!
+  description: String!
+  isActive: Boolean!
+  pricePerHour: Float!
+  title: String!
+}
+
+type ServiceOfferedType {
+  category: String!
+  description: String!
+  isActive: Boolean!
+  pricePerHour: Float!
+  title: String!
+}
+
+type Settings {
+  aiProvider: String!
+  apiKey: String
+  baseUrl: String!
+  modelName: String!
+}
+
+type SocialLinks {
+  facebook: String
+  github: String
+  instagram: String
+  linkedin: String
+  twitter: String
+}
+
+input SocialLinksInput {
+  facebook: String
+  github: String
+  instagram: String
+  linkedin: String
+  twitter: String
+}
+
+type SocialLinksType {
+  facebook: String
+  github: String
+  instagram: String
+  linkedin: String
+  twitter: String
+}
+
+type Stats {
+  averageRating: Float!
+  jobsCompleted: Float!
+  jobsReceived: Float!
+  totalEarned: Float!
+  totalReviews: Float!
+  totalSpent: Float!
+}
+
+type StatsType {
+  averageRating: Float!
+  jobsCompleted: Float!
+  jobsReceived: Float!
+  totalEarned: Float!
+  totalReviews: Float!
+  totalSpent: Float!
+}
+
+type SuggestionsResponse {
+  suggestions: [String!]!
+}
+
+type SystemAlertResponse {
+  message: String!
+  success: Boolean!
+}
+
+type Transaction {
+  _id: ID!
+  amount: Float!
+  clientSecret: String
+  createdAt: DateTime!
+  currency: String!
+  description: String
+  jobId: ID
+  status: TransactionStatus!
+  stripePaymentIntentId: String
+  stripeTransferId: String
+  type: TransactionType!
+  updatedAt: DateTime!
+  userId: ID!
+}
+
+enum TransactionStatus {
+  CANCELLED
+  COMPLETED
+  FAILED
+  PENDING
+}
+
+enum TransactionType {
+  COMMISSION
+  ESCROW_HOLD
+  ESCROW_RELEASE
+  PAYMENT_RECEIVED
+  PAYMENT_SENT
+  REFUND
+  WITHDRAWAL
+}
+
+type TwoFactorAuth {
+  enabled: Boolean!
+}
+
+input TwoFactorCodeInput {
+  code: String!
+}
+
+type TwoFactorSetupResponse {
+  backupCodes: [String!]!
+  qrCode: String!
+  secret: String!
+}
+
+input UpdateCategoryInput {
+  color: String
+  description: String
+  icon: String
+  isActive: Boolean
+  keywords: [String!]
+  name: String
+  order: Float
+  skills: [String!]
+}
+
+input UpdateProfessionalProfileInput {
+  avatar: String
+  bio: String
+  gallery: [String]
+  location: String
+  name: String
+  phone: String
+  services: [ServiceOfferInput]!
+}
+
+input UpdateProfileInput {
+  avatar: String
+  bio: String
+  location: String
+  name: String
+  phone: String
+}
+
+type User {
+  _id: ID!
+  avatar: String
+  bio: String
+  email: String!
+  emailVerified: Boolean!
+  favoriteProviders: [String]!
+  gallery: [String]!
+  isActive: Boolean!
+  lastLogin: DateTime
+  location: String
+  name: String!
+  phone: String
+  role: UserRole!
+  securitySettings: UserSecuritySettings
+  servicesOffered: [UserServiceOffered]!
+  socialLinks: UserSocialLinks
+  stats: UserStatistics
+  stripeAccountId: String
+  stripeCustomerId: String
+  twoFactorAuth: UserTwoFactorAuth
+}
+
+type UserInfo {
+  _id: String!
+  avatar: String
+  bio: String
+  email: String!
+  emailVerified: Boolean!
+  gallery: [String!]
+  isActive: Boolean!
+  lastLogin: String
+  location: String
+  name: String!
+  phone: String
+  role: String!
+  servicesOffered: [ServiceOffered!]
+  socialLinks: SocialLinks
+  stats: Stats
+  twoFactorAuth: TwoFactorAuth
+}
+
+type UserInfoType {
+  _id: ID!
+  avatar: String
+  bio: String
+  createdAt: String
+  email: String!
+  isActive: Boolean!
+  lastLogin: String
+  location: String
+  name: String!
+  phone: String
+  role: String!
+  stats: UserStatsType
+  stripeAccountComplete: Boolean
+}
+
+type UserProfileType {
+  _id: ID!
+  avatar: String
+  bio: String
+  email: String!
+  emailVerified: Boolean!
+  gallery: [String!]
+  isActive: Boolean!
+  lastLogin: String
+  location: String
+  name: String!
+  phone: String
+  role: String!
+  servicesOffered: [ServiceOfferedType!]
+  socialLinks: SocialLinksType
+  stats: StatsType
+}
+
+enum UserRole {
+  ADMIN
+  BOTH
+  CLIENT
+  PROVIDER
+}
+
+type UserSecuritySettings {
+  biometricEnabled: Boolean!
+  biometricPublicKey: String
+  lastPasswordChange: DateTime
+  passwordResetExpires: DateTime
+  passwordResetToken: String
+}
+
+type UserServiceOffered {
+  categoryId: ID!
+  description: String
+  isActive: Boolean!
+  pricePerHour: Float!
+  title: String!
+}
+
+type UserSocialLinks {
+  facebook: String
+  github: String
+  instagram: String
+  linkedin: String
+  twitter: String
+}
+
+type UserStatistics {
+  averageRating: Float!
+  jobsCompleted: Float!
+  jobsReceived: Float!
+  totalEarned: Float!
+  totalReviews: Float!
+  totalSpent: Float!
+}
+
+type UserStatsType {
+  averageRating: Float!
+  jobsCompleted: Float!
+  totalEarned: Float!
+  totalReviews: Float!
+}
+
+type UserTwoFactorAuth {
+  backupCodes: [String!]
+  enabled: Boolean!
+  secret: String
+}
+
+type UserType {
+  _id: ID!
+  avatar: String
+  bio: String
+  email: String!
+  location: String
+  name: String!
+}
+
+input VerifyEmailInput {
+  token: String!
+}
+
+type Wallet {
+  _id: ID!
+  availableBalance: Float!
+  createdAt: DateTime!
+  currency: String!
+  pendingBalance: Float!
+  totalEarned: Float!
+  totalSpent: Float!
+  updatedAt: DateTime!
+  userId: ID!
+}

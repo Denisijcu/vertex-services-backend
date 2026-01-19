@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    
+    /* --- CONFIGURACIÓN DE LIMPIEZA Y ESTRICTEZ --- */
+    "strict": true,                         // Activa todos los controles estrictos de una vez
+    "noImplicitAny": true,                  // Obliga a tipar todo (evita errores en NÉMESIS IA)
+    "strictBindCallApply": true,
+    "forceConsistentCasingInFileNames": true, // Crucial: Render es Linux (sensible a Mayúsculas/Minúsculas)
+    "noFallthroughCasesInSwitch": true,
+    
+    /* --- DETECCIÓN DE CÓDIGO MUERTO --- */
+    "noUnusedLocals": true,                 // Marca como error variables que no usas
+    "noUnusedParameters": true,             // Marca como error parámetros que no usas
+    "noImplicitReturns": true,              // Asegura que todas las funciones devuelvan algo
+    
+    /* --- COMPATIBILIDAD CON GRAPHQL --- */
+    "strictPropertyInitialization": false   // Lo dejamos en false para que los @Field() de GraphQL no den error
+  },
+  "include": ["src", "test-quantum.ts"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"] 
+}
