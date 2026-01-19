@@ -77,6 +77,11 @@ export class PulsePost extends Document {
   @Prop() 
   mediaType: string;
 
+  // 🔧 NUEVO: Campo de views
+  @Field({ nullable: true })
+  @Prop({ default: 0 })
+  views: number;
+
   @Field()
   @Prop({ index: -1 })
   createdAt: Date;

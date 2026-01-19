@@ -20,13 +20,12 @@ export class PulseResolver {
       skip || 0
     );
     
-    // 🔧 MAPEO CORRECTO
     return posts.map((post: any) => {
       const plain = typeof post.toObject === 'function' ? post.toObject() : post;
       return {
         ...plain,
         pulseId: String(plain._id),
-        _id: undefined // Remover _id del objeto
+        _id: undefined
       };
     });
   }
@@ -102,5 +101,12 @@ export class PulseResolver {
   @Mutation(() => Boolean)
   async deletePulsePost(@Args('pulseId') pulseId: string) {
     return this.pulseService.delete(pulseId);
+  }
+
+  // 🔧 NUEVO: Mutation para incrementar views
+  @Mutation(() => Boolean)
+  async incrementPostViews(@Args('pulseId') pulseId: string) {
+    await this.pulseService.incrementViews(pulseId);
+    return true;
   }
 }

@@ -283,6 +283,7 @@ type Mutation {
   getBiometricChallenge(email: String!): BiometricChallengeResponse!
   getStripeConnectOnboardingLink: String!
   getStripeOnboardingLink: String!
+  incrementPostViews(pulseId: String!): Boolean!
   login(input: LoginInput!): LoginResponse!
   markMessagesAsRead(jobId: ID!): Boolean!
   markNotificationAsRead(id: String!): Boolean!
@@ -369,6 +370,7 @@ type PulsePost {
   mediaType: String
   mediaUrl: String
   pulseId: ID!
+  views: Float
 }
 
 type QuantumMigrationResponse {

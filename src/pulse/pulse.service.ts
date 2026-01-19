@@ -30,27 +30,30 @@ export class PulseService {
       mediaUrl,
       mediaType,
       likes: [],
-      comments: []
+      comments: [],
+      views: 0 // 🔧 Inicializar en 0
     });
     return await newPost.save();
   }
 
   async findAll(categoryId?: string, limit: number = 10, skip: number = 0) {
-  const query = categoryId ? { category: categoryId } : {};
+    const query = categoryId ? { category: categoryId } : {};
 
-  const posts = await this.pulseModel
-    .find(query)
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .skip(skip)
-    .exec();
+    const posts = await this.pulseModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .exec();
 
-  // 🔧 Convertir a objetos con pulseId
-  return posts.map(p => ({
-    ...p.toObject(),
-    pulseId: p._id.toString()
-  }));
-}
+    return posts.map(post => {
+      const obj = post.toObject();
+      return {
+        ...obj,
+        _id: obj._id || post._id
+      };
+    });
+  }
 
   async countPosts(categoryId?: string): Promise<number> {
     const query = categoryId ? { category: categoryId } : {};
@@ -97,5 +100,14 @@ export class PulseService {
 
   async findById(pulseId: string) {
     return await this.pulseModel.findById(pulseId).exec();
+  }
+
+  // 🔧 NUEVO: Incrementar views
+  async incrementViews(pulseId: string) {
+    return await this.pulseModel.findByIdAndUpdate(
+      pulseId,
+      { $inc: { views: 1 } },
+      { new: true }
+    ).exec();
   }
 }
